@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, Download, LogOut, Mail, MessageCircle, Share } from "lucide-react";
+import { Bell, Download, LogOut, Mail, MessageCircle, Share, Users } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import {
   useLogout,
@@ -127,6 +128,22 @@ export default function SettingsPage() {
         <h1 className="font-heading text-3xl font-bold tracking-tight">⚙️ You</h1>
         <p className="mt-1 text-sm text-muted-foreground">Signed in as {me.member.name}.</p>
       </header>
+
+      <Link
+        href="/household"
+        className="glass group flex items-center gap-4 rounded-2xl p-5 transition-transform hover:-translate-y-0.5"
+      >
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/15 text-acid">
+          <Users className="size-5" />
+        </span>
+        <span className="flex-1">
+          <span className="block font-semibold">Household</span>
+          <span className="block text-sm text-muted-foreground">
+            {me.member.role === "tenant" ? "Manage members, roles & invites." : "See who's in the flat."}
+          </span>
+        </span>
+        <span aria-hidden className="text-xl text-muted-foreground transition-transform group-hover:translate-x-1">→</span>
+      </Link>
 
       <Card>
         <h2 className="text-base font-semibold">Get notified</h2>
