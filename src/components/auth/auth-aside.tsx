@@ -11,7 +11,7 @@ export function AuthAside() {
   const residents = data?.hallOfShame.length || 6;
 
   return (
-    <aside className="relative hidden flex-col justify-center overflow-hidden border-r border-white/10 p-12 lg:flex xl:p-20">
+    <aside className="relative hidden flex-col justify-center overflow-hidden border-r border-border bg-card/40 p-12 lg:flex xl:p-20">
       <div
         aria-hidden
         className="pointer-events-none absolute -left-40 top-1/2 h-[44rem] w-[44rem] -translate-y-1/2 rounded-full bg-acid/12 blur-[160px]"

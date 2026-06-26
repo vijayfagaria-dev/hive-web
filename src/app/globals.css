@@ -5,10 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
-  Hive — "After Hours".
-  Near-black canvas, acid-lime accent, glassy surfaces, glow. The whole app is
-  dark by default (the tokens below live on :root). `.dark` mirrors them so any
-  stray `.dark` wrapper stays consistent.
+  Hive — "Daylight Ledger".
+  Warm cream paper, ink text, acid-lime accent. Light-mode-first (the product
+  owner's chosen direction). Tokens live on :root; `.dark` mirrors a deep variant
+  for any stray dark wrapper, but the app is light by default.
 */
 @theme inline {
   --color-background: var(--background);
@@ -16,17 +16,17 @@
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-display);
   --font-display: var(--font-display);
+  --font-poppins: var(--font-poppins);
 
-  /* Signature accent + ink. Old `ember` aliases point at acid so legacy
-     utility classes degrade to the new accent during the re-skin. */
-  --color-acid: oklch(0.93 0.205 122);
-  --color-acid-dim: oklch(0.82 0.16 122);
-  --color-ember: oklch(0.93 0.205 122);
-  --color-ember-bright: oklch(0.93 0.205 122);
-  --color-cream: oklch(0.97 0.004 250);
-  --color-ink: oklch(0.145 0.006 264);
+  /* Signature accent + ink. `ember` aliases point at acid for legacy classes. */
+  --color-acid: oklch(0.82 0.19 124);
+  --color-acid-dim: oklch(0.72 0.16 126);
+  --color-ember: oklch(0.82 0.19 124);
+  --color-ember-bright: oklch(0.82 0.19 124);
+  --color-cream: oklch(0.962 0.008 92);
+  --color-ink: oklch(0.22 0.012 90);
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -66,41 +66,40 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* ---- After Hours (default) ---- */
-:root,
-.dark {
-  --background: oklch(0.145 0.006 264);
-  --foreground: oklch(0.97 0.004 250);
-  --card: oklch(0.185 0.006 264);
-  --card-foreground: oklch(0.97 0.004 250);
-  --popover: oklch(0.165 0.006 264);
-  --popover-foreground: oklch(0.97 0.004 250);
-  --primary: oklch(0.93 0.205 122);
-  --primary-foreground: oklch(0.16 0.006 264);
-  --secondary: oklch(0.22 0.006 264);
-  --secondary-foreground: oklch(0.97 0.004 250);
-  --muted: oklch(0.24 0.006 264);
-  --muted-foreground: oklch(0.66 0.006 264);
-  --accent: oklch(0.26 0.01 264);
-  --accent-foreground: oklch(0.97 0.004 250);
-  --destructive: oklch(0.62 0.21 25);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.93 0.205 122);
-  --chart-1: oklch(0.93 0.205 122);
-  --chart-2: oklch(0.82 0.16 122);
-  --chart-3: oklch(0.7 0.13 130);
-  --chart-4: oklch(0.6 0.1 140);
-  --chart-5: oklch(0.5 0.08 150);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.165 0.006 264);
-  --sidebar-foreground: oklch(0.97 0.004 250);
-  --sidebar-primary: oklch(0.93 0.205 122);
-  --sidebar-primary-foreground: oklch(0.16 0.006 264);
-  --sidebar-accent: oklch(0.26 0.01 264);
-  --sidebar-accent-foreground: oklch(0.97 0.004 250);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.93 0.205 122);
+/* ---- Daylight Ledger (light, default) ---- */
+:root {
+  --background: oklch(0.962 0.008 92);
+  --foreground: oklch(0.22 0.012 90);
+  --card: oklch(0.995 0.004 92);
+  --card-foreground: oklch(0.22 0.012 90);
+  --popover: oklch(0.995 0.004 92);
+  --popover-foreground: oklch(0.22 0.012 90);
+  --primary: oklch(0.82 0.19 124);
+  --primary-foreground: oklch(0.28 0.06 130);
+  --secondary: oklch(0.92 0.008 90);
+  --secondary-foreground: oklch(0.26 0.012 90);
+  --muted: oklch(0.93 0.006 90);
+  --muted-foreground: oklch(0.5 0.012 92);
+  --accent: oklch(0.9 0.05 122);
+  --accent-foreground: oklch(0.26 0.04 128);
+  --destructive: oklch(0.58 0.2 25);
+  --border: oklch(0.22 0.012 90 / 12%);
+  --input: oklch(0.22 0.012 90 / 16%);
+  --ring: oklch(0.82 0.19 124);
+  --chart-1: oklch(0.82 0.19 124);
+  --chart-2: oklch(0.72 0.16 126);
+  --chart-3: oklch(0.62 0.13 134);
+  --chart-4: oklch(0.7 0.1 60);
+  --chart-5: oklch(0.6 0.13 25);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.985 0.005 92);
+  --sidebar-foreground: oklch(0.22 0.012 90);
+  --sidebar-primary: oklch(0.82 0.19 124);
+  --sidebar-primary-foreground: oklch(0.28 0.06 130);
+  --sidebar-accent: oklch(0.92 0.008 90);
+  --sidebar-accent-foreground: oklch(0.26 0.012 90);
+  --sidebar-border: oklch(0.22 0.012 90 / 12%);
+  --sidebar-ring: oklch(0.82 0.19 124);
 }
 
 @layer base {
@@ -111,6 +110,7 @@
     @apply font-sans;
     scroll-behavior: smooth;
     text-rendering: optimizeLegibility;
+    -webkit-text-size-adjust: 100%;
   }
   body {
     @apply bg-background text-foreground;
@@ -122,65 +122,257 @@
   }
   ::selection {
     background: var(--color-acid);
-    color: oklch(0.16 0.006 264);
+    color: oklch(0.24 0.04 130);
   }
 }
 
-/* ---- After Hours utilities ---- */
+/* ---- Daylight utilities ---- */
 
-/* Glassy surface — translucent white over the dark canvas. */
+/* Glassy surface — translucent white over the warm canvas. */
 .glass {
-  background-color: oklch(1 0 0 / 4%);
-  border: 1px solid oklch(1 0 0 / 8%);
+  background-color: oklch(1 0 0 / 60%);
+  border: 1px solid var(--border);
   backdrop-filter: blur(12px);
 }
 
 /* Acid glow halo (use sparingly on hero numbers / CTAs). */
 .glow-acid {
-  box-shadow: 0 0 60px -10px oklch(0.93 0.205 122 / 35%);
+  box-shadow: 0 10px 30px -10px oklch(0.82 0.19 124 / 45%);
 }
 .text-glow {
-  text-shadow: 0 0 45px oklch(0.93 0.205 122 / 25%);
+  text-shadow: 0 1px 0 oklch(1 0 0 / 50%);
 }
 
-/* Faint engineering grid + top acid wash — the ambient backdrop. */
+/* Ambient warm wash for app pages (light, soft). */
 .ambient::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-image:
-    linear-gradient(oklch(1 0 0 / 3.5%) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(1 0 0 / 3.5%) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 35%, transparent 75%);
+  background:
+    radial-gradient(40% 36% at 18% 8%, oklch(0.86 0.06 60 / 35%), transparent 70%),
+    radial-gradient(46% 40% at 88% 4%, oklch(0.85 0.08 200 / 22%), transparent 72%),
+    radial-gradient(50% 40% at 50% 110%, oklch(0.82 0.19 124 / 12%), transparent 70%);
 }
 .ambient::after {
   content: "";
   position: fixed;
-  top: -20rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 70rem;
-  height: 40rem;
+  inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(circle, oklch(0.93 0.205 122 / 8%), transparent 60%);
-  filter: blur(40px);
+  background-image: radial-gradient(oklch(0.22 0.012 90 / 5%) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 30%, transparent 80%);
 }
 
-/* Very subtle grain for depth (kept light on the dark canvas). */
+/* Very subtle grain for tactility. */
 .grain::after {
   content: "";
   position: fixed;
   inset: 0;
   z-index: 60;
   pointer-events: none;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+}
+
+/* Confetti (fired on a complaint reaching "registered"). */
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(var(--rot, 0deg)); opacity: 1; }
+  100% { transform: translateY(108vh) rotate(calc(var(--rot, 0deg) + 720deg)); opacity: 0; }
+}
+
+/* =======================================================================
+   Landing hero — "Four flatmates. One pot." (scoped under .landing)
+   ======================================================================= */
+.landing {
+  --lime: 156 206 30;
+  --lime-deep: #7fa81a;
+  --ink: #181711;
+  --ink-soft: #4a4636;
+  --muted: #857f6d;
+  --cream: #f4eee2;
+  --line: rgba(24, 23, 17, 0.12);
+  --terra: #c8775a;
+  --domino-blue: #0b6cb0;
+  --domino-red: #e2231a;
+  --can: #cbd2d6;
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: radial-gradient(125% 90% at 50% -10%, #fbf6ec, var(--cream) 55%, #ece2cf);
+}
+.landing .lh-glow {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(36% 32% at 50% 42%, rgb(var(--lime) / 0.15), transparent 70%);
+}
+.landing .lh-grain {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0.045; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.landing .lh-head {
+  position: relative; z-index: 30; display: flex; align-items: center; justify-content: space-between;
+  padding: 18px clamp(16px, 4vw, 40px);
+}
+.landing .lh-brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-display), serif; font-weight: 600; font-size: 20px; }
+.landing .lh-brand svg { width: 26px; height: 26px; }
+.landing .lh-nav { display: flex; gap: 8px; font-size: 14px; }
+.landing .lh-nav a { color: var(--ink-soft); text-decoration: none; padding: 8px 14px; border-radius: 999px; font-weight: 500; }
+.landing .lh-nav a:hover { background: rgba(24, 23, 17, 0.06); color: var(--ink); }
+.landing .lh-nav a.join { background: var(--ink); color: var(--cream); }
+
+.landing .stage {
+  position: relative; z-index: 20; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 6px clamp(16px, 5vw, 40px) clamp(34px, 6vh, 64px); gap: clamp(10px, 2vh, 18px);
+}
+
+.landing .eyebrow {
+  display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono), monospace; font-size: 11.5px;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--lime-deep); background: rgb(var(--lime) / 0.12);
+  border: 1px solid rgb(var(--lime) / 0.32); padding: 5px 13px; border-radius: 999px; opacity: 0; animation: lh-fade 0.6s ease 0.1s forwards;
+}
+.landing .pdot { position: relative; width: 7px; height: 7px; }
+.landing .pdot i { position: absolute; inset: 0; border-radius: 50%; background: var(--lime-deep); }
+.landing .pdot i:first-child { animation: lh-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
+
+/* the animated wordmark */
+.landing .logo { position: relative; display: inline-block; line-height: 1; margin-top: 4px; }
+.landing .word {
+  position: relative; display: inline-flex; align-items: flex-end; font-family: var(--font-poppins), system-ui, sans-serif; font-weight: 700;
+  font-size: clamp(74px, 16vw, 168px); letter-spacing: -0.03em; color: var(--ink);
+}
+.landing .word .ltr {
+  display: inline-block; transform-origin: 50% 80%; opacity: 0; transform: translateY(26px) scale(0.62); filter: blur(8px);
+  animation: lh-letterIn 0.8s cubic-bezier(0.2, 0.9, 0.25, 1.15) forwards;
+}
+.landing .word .l1 { animation-delay: 0.62s; } .landing .word .l2 { animation-delay: 0.74s; }
+.landing .word .l3 { animation-delay: 0.86s; } .landing .word .l4 { animation-delay: 0.98s; }
+.landing .i-wrap { position: relative; display: inline-block; }
+.landing .tittle {
+  position: absolute; left: 50%; top: -0.02em; width: 0.2em; height: 0.2em; border-radius: 50%; background: var(--lime-deep);
+  transform: translate(-50%, -120%) scale(0); box-shadow: 0 3px 10px rgba(127, 168, 26, 0.5);
+  animation: lh-tland 0.55s cubic-bezier(0.3, 1.4, 0.4, 1) 0.92s forwards, lh-thop 2.7s ease-in-out 1.7s infinite;
+}
+.landing .dots { position: absolute; left: 50%; top: -0.66em; transform: translateX(-50%); display: flex; gap: clamp(8px, 1.6vw, 16px); }
+.landing .dots i { display: block; width: clamp(11px, 2.1vw, 19px); height: clamp(11px, 2.1vw, 19px); border-radius: 50%; opacity: 0; transform: translateY(-40px) scale(0); animation: lh-dotIn 0.9s forwards; }
+.landing .dots i.a { background: var(--lime-deep); animation-delay: 0.02s; } .landing .dots i.b { background: var(--ink); animation-delay: 0.1s; }
+.landing .dots i.c { background: rgb(var(--lime)); animation-delay: 0.18s; } .landing .dots i.d { background: var(--ink-soft); animation-delay: 0.26s; }
+
+/* title with the flat's icons floating around it */
+.landing .title-wrap { position: relative; display: inline-block; margin-top: 6px; }
+.landing .title { font-family: var(--font-display), serif; font-weight: 600; font-size: clamp(24px, 4vw, 46px); letter-spacing: -0.015em; line-height: 1.04; position: relative; z-index: 2; }
+.landing .title b { color: var(--lime-deep); font-style: italic; font-weight: 600; }
+.landing .icons { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.landing .ico {
+  --w: clamp(42px, 4.4vw, 56px); --op: 1; position: absolute; display: grid; place-items: center; width: var(--w); height: var(--w);
+  border-radius: 50%; background: #fffdf8; border: 1px solid var(--line);
+  box-shadow: 0 calc(var(--w) * 0.2) calc(var(--w) * 0.42) -10px rgba(60, 48, 28, 0.5);
+  font-size: calc(var(--w) * 0.46); opacity: var(--op); animation: lh-drift var(--t, 7s) ease-in-out infinite; animation-delay: var(--dl, 0s);
+}
+.landing .ico svg { width: 60%; height: 60%; display: block; }
+.landing .i1 { top: -60px; left: -154px; --t: 6.6s; --r: -6deg; }
+.landing .i2 { top: 22px; left: -226px; --t: 7.8s; --dl: -1.4s; --r: 5deg; }
+.landing .i3 { bottom: -62px; left: -154px; --t: 7.1s; --dl: -2.6s; --r: -4deg; }
+.landing .i4 { top: -60px; right: -154px; --t: 7.4s; --dl: -0.7s; --r: 5deg; }
+.landing .i5 { top: 22px; right: -226px; --t: 6.4s; --dl: -1.9s; --r: -5deg; }
+.landing .i6 { bottom: -62px; right: -154px; --t: 8s; --dl: -3.1s; --r: 6deg; }
+
+.landing .sub { color: var(--ink-soft); font-size: clamp(14px, 2vw, 16px); max-width: 430px; opacity: 0; animation: lh-fade 0.6s ease 1.25s forwards; }
+.landing .lh-ctas { display: flex; gap: 11px; flex-wrap: wrap; justify-content: center; opacity: 0; animation: lh-fade 0.6s ease 1.4s forwards; }
+.landing .lh-btn { font-family: var(--font-poppins), sans-serif; font-weight: 600; font-size: 14.5px; text-decoration: none; padding: 13px 24px; border-radius: 999px; cursor: pointer; border: 1px solid transparent; transition: transform 0.15s; }
+.landing .lh-btn:hover { transform: translateY(-2px); }
+.landing .lh-btn.primary { background: rgb(var(--lime)); color: #1d2606; box-shadow: 0 10px 24px -8px rgb(var(--lime) / 0.5); }
+.landing .lh-btn.ghost { background: rgba(255, 253, 248, 0.7); color: var(--ink); border-color: var(--line); }
+.landing .lh-stats { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; font-size: 13px; color: var(--ink-soft); opacity: 0; animation: lh-fade 0.6s ease 1.55s forwards; }
+.landing .lh-stats b { color: var(--ink); }
+.landing .lh-stats .sep { opacity: 0.4; }
+
+/* live ledger ticker */
+.landing .ticker {
+  position: relative; z-index: 15; width: 100%; border-top: 1px solid var(--line); overflow: hidden;
+  background: rgba(255, 253, 248, 0.5); padding: 11px 0; font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: 0.03em; color: var(--ink-soft);
+  -webkit-mask: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+.landing .ticker::before {
+  content: "● LIVE"; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 2;
+  font-size: 9px; letter-spacing: 0.14em; color: var(--lime-deep); background: var(--cream); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line);
+}
+.landing .ticker-track { display: inline-flex; align-items: center; white-space: nowrap; animation: lh-marq 38s linear infinite; will-change: transform; padding-left: 70px; }
+.landing .ti { padding: 0 14px; display: inline-flex; align-items: center; gap: 7px; }
+.landing .ti b { color: var(--ink); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.landing .ti .amt { color: var(--lime-deep); font-weight: 600; }
+.landing .tdot { width: 5px; height: 5px; border-radius: 50%; background: rgb(var(--lime)); opacity: 0.55; }
+
+/* the game — anchored, captioned unit */
+.landing .play {
+  position: absolute; right: clamp(16px, 4vw, 40px); bottom: clamp(58px, 8vh, 82px); z-index: 25;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 10px; opacity: 0;
+  transform: rotate(-4deg); transform-origin: bottom right; transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1); animation: lh-fade 0.6s ease 1.55s forwards;
+}
+.landing .play:hover { transform: rotate(0deg) scale(1.02); }
+.landing .play-cap { font-family: var(--font-mono), monospace; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-right: 12px; }
+.landing .ttt {
+  position: relative; width: 162px; display: flex; flex-direction: column; gap: 5px; background: #fbf5e9; border: 1px solid var(--ink); border-radius: 12px; padding: 9px;
+  box-shadow: 0 2px 1px rgba(60, 48, 28, 0.12), 0 20px 34px -14px rgba(60, 48, 28, 0.55); font-family: var(--font-mono), monospace;
+}
+.landing .tape { position: absolute; top: -9px; left: 50%; width: 48px; height: 17px; transform: translateX(-50%) rotate(2.5deg); background: rgb(var(--lime) / 0.34); border: 1px solid rgba(24, 23, 17, 0.07); border-radius: 2px; box-shadow: 0 1px 2px rgba(60, 48, 28, 0.12); }
+.landing .ttt-top { display: flex; align-items: center; justify-content: space-between; }
+.landing .ttt-title { font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); display: flex; align-items: center; gap: 4px; }
+.landing .ttt-turns { display: flex; gap: 4px; }
+.landing .who { width: 19px; height: 19px; display: grid; place-items: center; border-radius: 6px; font-size: 12px; font-weight: 700; border: 1px solid var(--line); color: var(--ink-soft); transition: transform 0.2s, background 0.2s, color 0.2s; }
+.landing .who.o { color: var(--lime-deep); }
+.landing .who.x.active { background: var(--ink); color: var(--cream); border-color: transparent; transform: scale(1.12); }
+.landing .who.o.active { background: rgb(var(--lime)); color: #1d2606; border-color: transparent; transform: scale(1.12); }
+.landing .ttt-stake { font-family: var(--font-mono), monospace; font-size: 8px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.landing .ttt-board { width: 100%; height: auto; display: block; touch-action: manipulation; margin: 1px 0; }
+.landing #tttGridLines path { stroke: #cdb78f; stroke-width: 3; fill: none; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: lh-draw 0.5s ease forwards; }
+.landing #tttGridLines path:nth-child(2) { animation-delay: 0.08s; } .landing #tttGridLines path:nth-child(3) { animation-delay: 0.16s; } .landing #tttGridLines path:nth-child(4) { animation-delay: 0.24s; }
+.landing .hit { fill: transparent; cursor: pointer; pointer-events: all; }
+.landing .hit:hover { fill: rgb(var(--lime) / 0.1); }
+.landing .mark * { fill: none; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: lh-draw 0.3s ease forwards; }
+.landing .mark.x * { stroke: var(--ink); stroke-width: 8; }
+.landing .mark.x *:nth-child(2) { animation-delay: 0.15s; }
+.landing .mark.o * { stroke: var(--lime-deep); stroke-width: 8; }
+.landing #tttStrike line { stroke: var(--terra); stroke-width: 7; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: lh-draw 0.42s ease forwards; }
+.landing .ttt-foot { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-family: var(--font-mono), monospace; font-size: 8.5px; color: #6b6450; }
+.landing .ttt-reset { cursor: pointer; border: none; background: var(--ink); color: var(--cream); border-radius: 6px; padding: 3px 9px; font: inherit; font-size: 9px; }
+.landing .ttt-reset:hover { background: #000; }
+
+@keyframes lh-fade { to { opacity: 1; } }
+@keyframes lh-ping { 70%, 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes lh-letterIn { to { opacity: 1; transform: none; filter: none; } }
+@keyframes lh-tland { to { transform: translate(-50%, -10%) scale(1); } }
+@keyframes lh-thop { 0%, 100% { transform: translate(-50%, -10%) scale(1); } 50% { transform: translate(-50%, -46%) scale(1); } }
+@keyframes lh-dotIn { 0% { opacity: 0; transform: translateY(-40px) scale(0); } 35% { opacity: 1; transform: translateY(6px) scale(1); } 50% { transform: translateY(-4px) scale(1); } 62% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(34px) scale(0.4); } }
+@keyframes lh-drift { 0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); } 50% { transform: translateY(-12px) rotate(0deg); } }
+@keyframes lh-marq { to { transform: translateX(-50%); } }
+@keyframes lh-draw { to { stroke-dashoffset: 0; } }
+
+@media (max-width: 820px) {
+  .landing .icons { display: none; }
+  .landing .play { position: static; right: auto; bottom: auto; align-items: center; margin: 14px auto 0; animation-delay: 1.3s; transform: rotate(-4deg); transform-origin: center; }
+  .landing .ttt { width: 214px; }
+  .landing .lh-nav a.login { display: none; }
+}
+@media (max-width: 380px) {
+  .landing .lh-stats { flex-direction: column; gap: 4px; }
+  .landing .lh-stats .sep { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing .word .ltr { opacity: 1 !important; transform: none !important; filter: none !important; animation: none !important; }
+  .landing .tittle { transform: translate(-50%, -10%) scale(1); animation: none; }
+  .landing .dots { display: none; }
+  .landing .ico, .landing .eyebrow, .landing .sub, .landing .lh-ctas, .landing .lh-stats { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .landing .play { animation: none !important; opacity: 1 !important; }
+  .landing #tttGridLines path, .landing .mark *, .landing #tttStrike line { animation: none !important; stroke-dashoffset: 0 !important; }
+  .landing .ticker-track { animation: none !important; }
+  .landing .pdot i:first-child { animation: none; }
 }

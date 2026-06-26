@@ -2,7 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MotionConfig } from "motion/react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -13,6 +13,12 @@ export function Providers({ children }: { children: ReactNode }) {
         },
       }),
   );
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

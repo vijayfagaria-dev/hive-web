@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
-import { AppNav } from "@/components/app-nav";
+import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/lib/queries";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -22,10 +22,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  return (
-    <>
-      <AppNav member={member} />
-      <div className="flex-1">{children}</div>
-    </>
-  );
+  return <AppShell member={member}>{children}</AppShell>;
 }
