@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { api, type ComplaintDetail, type Vote } from "./api";
+import { api, type ComplaintDetail, type Role, type Vote } from "./api";
 
 export const qk = {
   auth: ["auth"] as const,
@@ -12,6 +12,9 @@ export const qk = {
   publicStats: ["public-stats"] as const,
   complaint: (id: number) => ["complaint", id] as const,
   notifications: ["notifications"] as const,
+  householdMembers: ["household-members"] as const,
+  member: (id: number) => ["household-member", id] as const,
+  invites: ["household-invites"] as const,
 };
 
 /** Invalidate everything that a complaint/pay action can change. */
@@ -212,5 +215,87 @@ export function useSetWhatsapp() {
       qc.invalidateQueries({ queryKey: qk.auth });
       qc.invalidateQueries({ queryKey: qk.me });
     },
+  });
+}
+
+// ─── household user management ───
+/** A member change (role/remove/rename) ripples into the roster + /me + dashboard. */
+function invalidateHousehold(qc: QueryClient) {
+  qc.invalidateQueries({ queryKey: qk.householdMembers });
+  qc.invalidateQueries({ queryKey: qk.me });
+  qc.invalidateQueries({ queryKey: qk.dashboard });
+}
+
+export function useHouseholdMembers(includeInactive = false) {
+  return useQuery({
+    queryKey: [...qk.householdMembers, includeInactive] as const,
+    queryFn: () => api.listMembers(includeInactive),
+  });
+}
+
+export function useMember(id: number) {
+  return useQuery({
+    queryKey: qk.member(id),
+    queryFn: () => api.getMember(id),
+    enabled: Number.isFinite(id) && id > 0,
+  });
+}
+
+export function useSetMemberRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, role }: { id: number; role: Role }) => api.setMemberRole(id, role),
+    onSuccess: (_d, v) => {
+      invalidateHousehold(qc);
+      qc.invalidateQueries({ queryKey: qk.member(v.id) });
+    },
+  });
+}
+
+export function useRenameMember() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, name }: { id: number; name: string }) => api.renameMember(id, name),
+    onSuccess: (_d, v) => {
+      invalidateHousehold(qc);
+      qc.invalidateQueries({ queryKey: qk.member(v.id) });
+    },
+  });
+}
+
+export function useRemoveMember() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.removeMember(id),
+    onSuccess: () => invalidateHousehold(qc),
+  });
+}
+
+export function useInvites() {
+  return useQuery({ queryKey: qk.invites, queryFn: api.listInvites });
+}
+
+export function useInviteMember() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { role: Role; email?: string | null; name?: string | null }) => api.inviteMember(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.invites }),
+  });
+}
+
+export function useRevokeInvite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.revokeInvite(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.invites }),
+  });
+}
+
+export function usePreviewInvite(token: string) {
+  return useQuery({
+    queryKey: ["invite-preview", token] as const,
+    queryFn: () => api.previewInvite(token),
+    enabled: !!token,
+    retry: false,
   });
 }

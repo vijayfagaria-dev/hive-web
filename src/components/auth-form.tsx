@@ -21,7 +21,7 @@ function Field({ id, label, ...props }: { id: string; label: string } & Componen
   );
 }
 
-export function AuthForm({ mode }: { mode: "login" | "register" }) {
+export function AuthForm({ mode, invite }: { mode: "login" | "register"; invite?: string }) {
   const router = useRouter();
   const login = useLogin();
   const register = useRegister();
@@ -44,7 +44,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       const email = String(data.get("email") ?? "").trim();
       const whatsapp = String(data.get("whatsapp") ?? "").trim();
       register.mutate(
-        { username, password, email: email || null, whatsapp: whatsapp || null },
+        { username, password, email: email || null, whatsapp: whatsapp || null, invite: invite ?? null },
         { onSuccess: go, onError: fail },
       );
     } else {
@@ -64,7 +64,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         minLength={isRegister ? 6 : undefined}
       />
 
-      {isRegister && (
+      {isRegister && !invite && (
         <>
           <Field id="email" label="Email (optional)" type="email" autoComplete="email" placeholder="you@flat.com" />
           <Field id="whatsapp" label="WhatsApp (optional)" type="tel" autoComplete="tel" placeholder="+91…" />

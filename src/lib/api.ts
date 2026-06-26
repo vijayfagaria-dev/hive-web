@@ -317,6 +317,56 @@ export const RuleVersion = z.object({
 });
 export type RuleVersion = z.infer<typeof RuleVersion>;
 
+// ─── Household user management ───
+export const InvitationStatus = z.enum(["pending", "accepted", "revoked", "expired"]);
+export type InvitationStatus = z.infer<typeof InvitationStatus>;
+
+/** Management view of a member (roster + lifecycle; no private contacts). */
+export const MemberAdmin = z.object({
+  id: z.number(),
+  name: z.string(),
+  username: z.string().nullable(),
+  role: Role,
+  isActive: z.boolean(),
+  joinedOn: z.string(),
+  leftOn: z.string().nullable(),
+});
+export type MemberAdmin = z.infer<typeof MemberAdmin>;
+
+export const MemberEvent = z.object({
+  type: z.string(),
+  actorId: z.number().nullable(),
+  detail: z.string().nullable(),
+  oldValue: z.string().nullable(),
+  newValue: z.string().nullable(),
+  ts: z.string(),
+});
+export type MemberEvent = z.infer<typeof MemberEvent>;
+
+export const Invitation = z.object({
+  id: z.number(),
+  role: Role,
+  name: z.string().nullable(),
+  email: z.string().nullable(),
+  status: InvitationStatus,
+  invitedBy: z.number(),
+  createdAt: z.string(),
+  expiresAt: z.string(),
+  acceptedBy: z.number().nullable(),
+  acceptedAt: z.string().nullable(),
+  token: z.string().optional(), // only echoed to the inviter, right after creation
+});
+export type Invitation = z.infer<typeof Invitation>;
+
+/** Public preview of a pending invite (the join page). */
+export const InvitePreview = z.object({
+  role: Role,
+  name: z.string().nullable(),
+  invitedBy: z.string().nullable(),
+  expiresAt: z.string(),
+});
+export type InvitePreview = z.infer<typeof InvitePreview>;
+
 // ─── Endpoint response schemas ───
 const AuthMe = z.object({ member: SelfMember.nullable() });
 const AuthResult = z.object({ member: SelfMember });
@@ -405,6 +455,14 @@ const RuleBookResponse = z.object({ rules: z.array(RuleBookRule) });
 const RuleVersionsResponse = z.object({ versions: z.array(RuleVersion) });
 const RollbackResult = z.object({ ok: z.boolean(), version: RuleVersion });
 
+// household wrappers
+const MembersResponse = z.object({ members: z.array(MemberAdmin) });
+const MemberDetailResponse = z.object({ member: MemberAdmin, events: z.array(MemberEvent).optional() });
+const MemberActionResult = z.object({ ok: z.boolean(), member: MemberAdmin });
+const InvitationsResponse = z.object({ invitations: z.array(Invitation) });
+const InviteCreated = z.object({ ok: z.boolean(), invitation: Invitation });
+const RevokeResult = z.object({ ok: z.boolean(), invitation: Invitation });
+
 // ─── Typed client ───
 export class ApiError extends Error {
   constructor(
@@ -453,7 +511,7 @@ async function requestForm<T>(path: string, schema: z.ZodType<T>, body: FormData
   return parse(res, schema);
 }
 
-type Credentials = { username: string; password: string; email?: string | null; whatsapp?: string | null };
+type Credentials = { username: string; password: string; email?: string | null; whatsapp?: string | null; invite?: string | null };
 type ComplaintBody = { accusedId: number; ruleId?: number; amount?: number; note?: string; images: File[] };
 type BillBody = { type: BillType; total: number; month: string; paidBy?: number | null };
 type PushSub = { endpoint: string; keys: { p256dh: string; auth: string } };
@@ -577,4 +635,22 @@ export const api = {
   ruleVersions: (ruleId: number) => request(`/rulebook/${ruleId}/versions`, RuleVersionsResponse),
   rollbackRule: (ruleId: number, versionId: number) =>
     request(`/rulebook/${ruleId}/rollback/${versionId}`, RollbackResult, { method: "POST" }),
+
+  // household user management (manage controls are gated server-side by permission)
+  listMembers: (includeInactive = false) =>
+    request(`/household/members${includeInactive ? "?includeInactive=true" : ""}`, MembersResponse),
+  getMember: (id: number) => request(`/household/members/${id}`, MemberDetailResponse),
+  renameMember: (id: number, name: string) =>
+    request(`/household/members/${id}`, MemberActionResult, { method: "PATCH", body: JSON.stringify({ name }) }),
+  setMemberRole: (id: number, role: Role) =>
+    request(`/household/members/${id}/role`, MemberActionResult, { method: "POST", body: JSON.stringify({ role }) }),
+  removeMember: (id: number) =>
+    request(`/household/members/${id}`, MemberActionResult, { method: "DELETE" }),
+  inviteMember: (body: { role: Role; email?: string | null; name?: string | null }) =>
+    request("/household/members/invite", InviteCreated, { method: "POST", body: JSON.stringify(body) }),
+  listInvites: () => request("/household/invites", InvitationsResponse),
+  revokeInvite: (id: number) =>
+    request(`/household/invites/${id}/revoke`, RevokeResult, { method: "POST" }),
+  previewInvite: (token: string) =>
+    request(`/household/invites/${encodeURIComponent(token)}`, InvitePreview),
 };
