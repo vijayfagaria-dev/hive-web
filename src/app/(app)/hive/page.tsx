@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Camera } from "lucide-react";
+import { Camera, Landmark } from "lucide-react";
 import { useMe } from "@/lib/queries";
 import { GettingHereCard } from "@/components/app/getting-here-card";
 import { RulesMenu } from "@/components/app/rules-menu";
@@ -58,6 +58,20 @@ export default function HivePage() {
           <span className="block text-sm opacity-80">Snap photo proof, then pick who & which rule.</span>
         </span>
         <span aria-hidden className="text-xl transition-transform group-hover:translate-x-1">→</span>
+      </Link>
+
+      <Link
+        href="/governance"
+        className="glass group flex items-center gap-4 rounded-2xl p-5 transition-transform hover:-translate-y-0.5"
+      >
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/15 text-acid">
+          <Landmark className="size-5" />
+        </span>
+        <span className="flex-1">
+          <span className="block font-semibold">Community Governance</span>
+          <span className="block text-sm text-muted-foreground">Propose &amp; vote on house rules — make the Rule Book yours.</span>
+        </span>
+        <span aria-hidden className="text-xl text-muted-foreground transition-transform group-hover:translate-x-1">→</span>
       </Link>
 
       <section>

@@ -13,6 +13,12 @@ const ICON: Record<string, string> = {
   vote_requested: "🗳️",
   complaint_registered: "✅",
   complaint_resolved: "⚖️",
+  // governance
+  proposal_voting: "🗳️",
+  proposal_comment: "💬",
+  proposal_resolved: "📜",
+  proposal_review: "🧐",
+  rule_published: "📖",
 };
 
 function dayKey(ts: string) {
@@ -51,7 +57,8 @@ export default function NotificationsPage() {
 
   function open(n: Notification) {
     if (!n.read) markRead.mutate(n.id);
-    if (n.fineId) router.push(`/complaints/${n.fineId}`);
+    if (n.proposalId) router.push(`/governance/proposals/${n.proposalId}`);
+    else if (n.fineId) router.push(`/complaints/${n.fineId}`);
   }
 
   return (
@@ -95,7 +102,7 @@ export default function NotificationsPage() {
                         {n.body && <span className="block text-sm text-muted-foreground">{n.body}</span>}
                         <span className="mt-0.5 block font-mono text-[0.65rem] text-muted-foreground">
                           {time(n.ts)}
-                          {n.fineId ? " · tap to open" : ""}
+                          {n.fineId || n.proposalId ? " · tap to open" : ""}
                         </span>
                       </span>
                       {!n.read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-acid" aria-hidden />}

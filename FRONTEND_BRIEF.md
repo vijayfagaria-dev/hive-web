@@ -61,40 +61,32 @@ not in bill splits, no dashboard). Notifications go out **in-app + Web Push + em
 
 ---
 
-## 2. Tech stack & setup — **this repo is already scaffolded; extend it, don't reinvent**
+## 2. Tech stack & setup
 
-`hive-web` is a live **Next.js 16 (App Router) / React 19 / TypeScript** project.
-Installed and in use (see `package.json`):
-- **Tailwind v4** + **shadcn (Base UI / `@base-ui/react`)** + `lucide-react` + `geist` font.
-- **`motion`** (Framer Motion) for animation — shared variants live in `src/lib/motion.ts`.
-- **TanStack Query v5** for server state — query hooks live in `src/lib/queries.ts`.
-- **Zod v4** for the runtime API contract — schemas + the typed client live in `src/lib/api.ts`.
-- **Playwright** for tests/screenshots.
+Per `DESIGN.md` the frontend is **Next.js (App Router, TypeScript)** with:
+- **Tailwind v4** + **shadcn/ui (Base UI)** for components.
+- **Framer Motion** for motion/micro-interactions.
+- **TanStack Query** for all server state (caching, optimistic updates, refetch).
+- **Zod** for runtime-validated API contracts (one schema per response).
+- **PWA**: web manifest + service worker (installable, Web Push).
 
-**Read these existing files before writing code, and follow their conventions:**
-`src/lib/api.ts` (client + Zod schemas — keep it in sync with the backend, it's the
-contract), `src/lib/queries.ts` (TanStack hooks), `src/lib/motion.ts`, `src/app/providers.tsx`,
-and `next.config.ts`. **Add to them; don't fork new parallel structures.**
+**Auth is same-origin cookie.** Configure Next to **proxy `/api/*` → the FastAPI
+backend** (e.g. `next.config` rewrites to `http://localhost:8000/api/:path*` in dev,
+and the real origin in prod) so the `hive_session` cookie is first-party. Always
+send credentials (`fetch(..., { credentials: "include" })` or an axios instance with
+`withCredentials`). Never put a token in JS — it's a signed httpOnly-style session cookie.
 
-**Auth is already same-origin cookie:** `next.config.ts` rewrites `/api/:path*` →
-`API_ORIGIN` (default `http://127.0.0.1:8000`, override in prod). Call `/api/...` with
-credentials included; the `hive_session` cookie is first-party. Never store a token in JS.
-
-**Existing structure (extend within it):**
+Suggested structure:
 ```
 src/
-  app/
-    (auth)/{login,register}/      # auth screens + layout      ← partially built
-    (app)/{dashboard,hive,pay}/   # authed screens + layout    ← partially built
-    s/[spot]/                     # NFC spot page
-    page.tsx  providers.tsx  layout.tsx  globals.css
-  components/{ui,app,auth,landing}/   # ui/ = shadcn primitives; app|auth|landing = composed
-  lib/{api.ts,queries.ts,motion.ts,utils.ts}
+  app/                # routes (App Router)
+  components/         # reusable UI (ui/ = shadcn primitives, app/ = composed)
+  features/           # complaints/, bills/, dues/, notifications/, account/, rules/
+  lib/api/            # typed client + Zod schemas (one file per resource)
+  lib/hooks/          # useMe, useDashboard, useComplaint, useNotifications, usePush...
+  lib/pwa/            # service worker registration + push subscribe
+  styles/
 ```
-Run `npm run dev` (it proxies to the backend at `http://127.0.0.1:8000`, so run the API
-too). Still to build: the **complaint loop** (composer + detail + accept/deny/vote),
-**notifications + Web Push (PWA)**, **bills**, **settings/account**, **rules**, **shame**,
-and the gen-z polish pass. Where a route already exists, **finish it**, don't recreate it.
 
 ---
 
@@ -456,5 +448,45 @@ Make it feel like a Gen-Z social app, not enterprise software. Direction (own th
 - It looks and feels like something a 23-year-old would actually want to open. 🐝
 
 > Reminder: when in doubt, **read `../hive-api`** (`app/api/routes`, `app/schemas`,
-> `app/domain/enums.py`, `app/services/complaints.py`) and match the code exactly.
-</content>
+> `app/domain/enums.py`, `app/services/complaints.py`, `app/services/proposals.py`) and match the code exactly.
+
+---
+
+## Appendix — Rule Proposals (v5)
+
+The rule book is amended by a **community vote**. Anyone proposes a new/modify/delete
+rule; **tenants** vote (one each, yes/no/abstain, changeable until the deadline); at
+close, configurable quorum+majority decide pass/reject; a passed proposal auto-merges
+into the rule book with immutable version history.
+
+**Enums:** `type` = `new_rule|modify_rule|delete_rule`; `status` = `draft|pending_review|
+voting|passed|rejected|expired|cancelled`; `phase` (render off this) = `draft|review|
+voting|passed|rejected|cancelled`; vote `choice` = `yes|no|abstain`.
+
+**API (all under `/api`, session-cookie auth):**
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/proposals` | `{type, title, body?, targetRuleId?, proposedCategory?, proposedText?, proposedAmount?, submit?}` → `{proposalId}` |
+| GET | `/proposals?status=` | list (summaries + tally) |
+| GET | `/proposals/{id}` | full detail: proposal + `proposer` + `vote{yes,no,abstain,eligible,myVote}` + `comments[]` + `timeline[]` + `canVote/canEdit/canAdmin` |
+| PATCH | `/proposals/{id}` | edit a draft; send `expectedVersion` (optimistic lock → 409 on stale) |
+| POST | `/proposals/{id}/submit` | draft → voting (or pending_review) |
+| POST | `/proposals/{id}/vote` | `{vote}` (tenants only; 403 for guests; 400 after deadline) |
+| GET | `/proposals/{id}/votes` · `/timeline` | tally + voters · event log |
+| GET/POST | `/proposals/{id}/comments` | list / add `{body, parentId?}` |
+| PATCH/DELETE | `/proposals/{id}/comments/{cid}` | edit (author) / soft-delete (author or admin) |
+| POST | `/proposals/{id}/cancel` | proposer or admin |
+| POST | `/proposals/{id}/{approve\|reject\|extend\|freeze\|force-merge}` | **admin (tenant)**; `extend{hours}`, `freeze{frozen}` |
+| GET | `/rulebook` | active rules (the official book) |
+| GET | `/rulebook/{ruleId}/versions` | immutable version history |
+| POST | `/rulebook/{ruleId}/rollback/{versionId}` | **admin**; restore a prior version |
+
+**Screens to build:** a **Proposals** tab (list with phase chips + live vote bars +
+countdown), a **proposal detail** (rationale, vote Yes/No/Abstain gated by `canVote`,
+tally + countdown, timeline, comments), a **"Propose a rule"** composer (type picker +
+rule fields + rationale), a **Rule Book** view with per-rule **version history + rollback**
+(admin), and admin controls on the detail when `canAdmin`. New notification kinds:
+`proposal_voting`, `proposal_comment`, `proposal_resolved`, `rule_published`, `proposal_review`
+(each carries `proposalId` → deep-link to `/proposals/{id}`).
+
+> Interactive API docs are auto-served by FastAPI at `/docs` (Swagger) and `/openapi.json`.

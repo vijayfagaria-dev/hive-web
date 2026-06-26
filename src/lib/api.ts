@@ -140,6 +140,7 @@ export const Notification = z.object({
   title: z.string(),
   body: z.string().nullable(),
   fineId: z.number().nullable(),
+  proposalId: z.number().nullable(),
   read: z.boolean(),
   ts: z.string(),
 });
@@ -189,6 +190,132 @@ export const ComplaintDetail = z.object({
   canVote: z.boolean(),
 });
 export type ComplaintDetail = z.infer<typeof ComplaintDetail>;
+
+// ─── Rule proposals + rule book (governance) ───
+// Render off `phase` (the backend maps status→phase; "expired"→"rejected").
+export const ProposalPhase = z.enum(["draft", "review", "voting", "passed", "rejected", "cancelled"]);
+export type ProposalPhase = z.infer<typeof ProposalPhase>;
+
+export const ProposalStatus = z.enum([
+  "draft", "pending_review", "voting", "passed", "rejected", "expired", "cancelled",
+]);
+export type ProposalStatus = z.infer<typeof ProposalStatus>;
+
+export const ProposalType = z.enum(["new_rule", "modify_rule", "delete_rule"]);
+export type ProposalType = z.infer<typeof ProposalType>;
+
+export const ProposalChoice = z.enum(["yes", "no", "abstain"]);
+export type ProposalChoice = z.infer<typeof ProposalChoice>;
+
+export const ProposalEventType = z.enum([
+  "created", "submitted", "approved", "voting_opened", "vote_cast", "commented",
+  "extended", "frozen", "voting_closed", "passed", "rejected", "expired", "cancelled", "merged",
+]);
+export type ProposalEventType = z.infer<typeof ProposalEventType>;
+
+export const ProposalTally = z.object({ yes: z.number(), no: z.number(), abstain: z.number() });
+export type ProposalTally = z.infer<typeof ProposalTally>;
+
+/** Fields shared by the list summary and the full detail. */
+const ProposalCore = z.object({
+  id: z.number(),
+  type: ProposalType,
+  status: ProposalStatus,
+  phase: ProposalPhase,
+  title: z.string(),
+  targetRuleId: z.number().nullable(),
+  proposedCategory: z.string().nullable(),
+  proposedText: z.string().nullable(),
+  proposedAmount: z.number().nullable(),
+  votingOpensAt: z.string().nullable(),
+  votingClosesAt: z.string().nullable(),
+  resolvedAt: z.string().nullable(),
+  resolutionDetail: z.string().nullable(),
+  mergedRuleId: z.number().nullable(),
+  frozen: z.boolean(),
+  createdAt: z.string(),
+  version: z.number(),
+  proposer: Member.nullable().optional(), // key omitted by the API when the proposer is missing
+});
+
+export const ProposalSummary = ProposalCore.extend({ tally: ProposalTally });
+export type ProposalSummary = z.infer<typeof ProposalSummary>;
+
+export const ProposalComment = z.object({
+  id: z.number(),
+  author: z.string().nullable(),
+  authorId: z.number(),
+  parentId: z.number().nullable(),
+  body: z.string().nullable(), // null when soft-deleted
+  edited: z.boolean(),
+  deleted: z.boolean(),
+  ts: z.string(),
+});
+export type ProposalComment = z.infer<typeof ProposalComment>;
+
+export const ProposalEvent = z.object({
+  type: ProposalEventType,
+  actor: z.string().nullable(),
+  detail: z.string().nullable(),
+  ts: z.string(),
+});
+export type ProposalEvent = z.infer<typeof ProposalEvent>;
+
+export const ProposalVoteState = z.object({
+  yes: z.number(),
+  no: z.number(),
+  abstain: z.number(),
+  eligible: z.number(),
+  myVote: ProposalChoice.nullable(),
+});
+export type ProposalVoteState = z.infer<typeof ProposalVoteState>;
+
+export const ProposalDetail = ProposalCore.extend({
+  body: z.string().nullable(),
+  vote: ProposalVoteState,
+  comments: z.array(ProposalComment),
+  timeline: z.array(ProposalEvent),
+  canVote: z.boolean(), // open voting AND viewer is a tenant
+  canEdit: z.boolean(), // draft AND viewer is the proposer
+  canAdmin: z.boolean(), // viewer is a tenant
+});
+export type ProposalDetail = z.infer<typeof ProposalDetail>;
+
+export const VoteRow = z.object({
+  choice: ProposalChoice,
+  voter: z.string().nullable(),
+  ts: z.string(),
+});
+export type VoteRow = z.infer<typeof VoteRow>;
+
+export const RuleBookRule = z.object({
+  id: z.number(),
+  category: z.string(),
+  text: z.string(),
+  amount: z.number(),
+  isFavorite: z.boolean(),
+  severityTier: z.string().nullable(),
+  isActive: z.boolean(),
+  useCount: z.number(),
+});
+export type RuleBookRule = z.infer<typeof RuleBookRule>;
+
+export const RuleVersion = z.object({
+  id: z.number(),
+  ruleId: z.number(),
+  versionNumber: z.number(),
+  category: z.string(),
+  text: z.string(),
+  amount: z.number(),
+  isFavorite: z.boolean(),
+  severityTier: z.string().nullable(),
+  active: z.boolean(),
+  createdBy: z.number().nullable(),
+  approvedBy: z.number().nullable(),
+  proposalId: z.number().nullable(),
+  createdAt: z.string(),
+});
+export type RuleVersion = z.infer<typeof RuleVersion>;
 
 // ─── Endpoint response schemas ───
 const AuthMe = z.object({ member: SelfMember.nullable() });
@@ -262,6 +389,22 @@ const PushKey = z.object({ key: z.string().nullable() });
 const EmailResult = z.object({ ok: z.boolean(), email: z.string().nullable() });
 const WhatsappResult = z.object({ ok: z.boolean(), whatsapp: z.string().nullable() });
 
+// governance wrappers
+const ProposalsResponse = z.object({ proposals: z.array(ProposalSummary) });
+const ProposalCreated = z.object({ ok: z.boolean(), proposalId: z.number() });
+const ProposalStatusResult = z.object({ ok: z.boolean(), status: ProposalStatus });
+const ProposalVoteResult = z.object({ ok: z.boolean(), tally: ProposalTally });
+const ProposalVotesResponse = z.object({
+  tally: z.object({ yes: z.number(), no: z.number(), abstain: z.number(), total: z.number().optional() }),
+  votes: z.array(VoteRow),
+});
+const ProposalTimelineResponse = z.object({ timeline: z.array(ProposalEvent) });
+const ProposalCommentsResponse = z.object({ comments: z.array(ProposalComment) });
+const CommentCreated = z.object({ ok: z.boolean(), commentId: z.number() });
+const RuleBookResponse = z.object({ rules: z.array(RuleBookRule) });
+const RuleVersionsResponse = z.object({ versions: z.array(RuleVersion) });
+const RollbackResult = z.object({ ok: z.boolean(), version: RuleVersion });
+
 // ─── Typed client ───
 export class ApiError extends Error {
   constructor(
@@ -314,6 +457,24 @@ type Credentials = { username: string; password: string; email?: string | null; 
 type ComplaintBody = { accusedId: number; ruleId?: number; amount?: number; note?: string; images: File[] };
 type BillBody = { type: BillType; total: number; month: string; paidBy?: number | null };
 type PushSub = { endpoint: string; keys: { p256dh: string; auth: string } };
+type ProposalCreateBody = {
+  type: ProposalType;
+  title: string;
+  body?: string | null;
+  targetRuleId?: number | null;
+  proposedCategory?: string | null;
+  proposedText?: string | null;
+  proposedAmount?: number | null;
+  submit?: boolean;
+};
+type ProposalUpdateBody = {
+  title?: string;
+  body?: string | null;
+  proposedCategory?: string | null;
+  proposedText?: string | null;
+  proposedAmount?: number | null;
+  expectedVersion?: number;
+};
 
 export const api = {
   // auth
@@ -375,4 +536,45 @@ export const api = {
     request("/push/subscribe", Ok, { method: "POST", body: JSON.stringify(sub) }),
   pushUnsubscribe: (endpoint: string) =>
     request("/push/unsubscribe", Ok, { method: "POST", body: JSON.stringify({ endpoint }) }),
+
+  // governance — proposals (session cookie; voting is tenant-only, gated server-side)
+  listProposals: (status?: string) =>
+    request(`/proposals${status ? `?status=${encodeURIComponent(status)}` : ""}`, ProposalsResponse),
+  proposal: (id: number) => request(`/proposals/${id}`, ProposalDetail),
+  createProposal: (body: ProposalCreateBody) =>
+    request("/proposals", ProposalCreated, { method: "POST", body: JSON.stringify(body) }),
+  updateProposal: (id: number, body: ProposalUpdateBody) =>
+    request(`/proposals/${id}`, Ok, { method: "PATCH", body: JSON.stringify(body) }),
+  submitProposal: (id: number) =>
+    request(`/proposals/${id}/submit`, ProposalStatusResult, { method: "POST" }),
+  voteProposal: (id: number, vote: ProposalChoice) =>
+    request(`/proposals/${id}/vote`, ProposalVoteResult, { method: "POST", body: JSON.stringify({ vote }) }),
+  proposalVotes: (id: number) => request(`/proposals/${id}/votes`, ProposalVotesResponse),
+  proposalTimeline: (id: number) => request(`/proposals/${id}/timeline`, ProposalTimelineResponse),
+  proposalComments: (id: number) => request(`/proposals/${id}/comments`, ProposalCommentsResponse),
+  addProposalComment: (id: number, body: string, parentId?: number | null) =>
+    request(`/proposals/${id}/comments`, CommentCreated, {
+      method: "POST",
+      body: JSON.stringify({ body, parentId: parentId ?? null }),
+    }),
+  editProposalComment: (id: number, commentId: number, body: string) =>
+    request(`/proposals/${id}/comments/${commentId}`, Ok, { method: "PATCH", body: JSON.stringify({ body }) }),
+  deleteProposalComment: (id: number, commentId: number) =>
+    request(`/proposals/${id}/comments/${commentId}`, Ok, { method: "DELETE" }),
+  cancelProposal: (id: number) => request(`/proposals/${id}/cancel`, ProposalStatusResult, { method: "POST" }),
+  // admin (tenant) controls
+  approveProposal: (id: number) => request(`/proposals/${id}/approve`, ProposalStatusResult, { method: "POST" }),
+  rejectProposal: (id: number) => request(`/proposals/${id}/reject`, ProposalStatusResult, { method: "POST" }),
+  extendProposal: (id: number, hours: number) =>
+    request(`/proposals/${id}/extend`, Ok, { method: "POST", body: JSON.stringify({ hours }) }),
+  freezeProposal: (id: number, frozen: boolean) =>
+    request(`/proposals/${id}/freeze`, Ok, { method: "POST", body: JSON.stringify({ frozen }) }),
+  forceMergeProposal: (id: number) =>
+    request(`/proposals/${id}/force-merge`, ProposalStatusResult, { method: "POST" }),
+
+  // governance — rule book
+  rulebook: () => request("/rulebook", RuleBookResponse),
+  ruleVersions: (ruleId: number) => request(`/rulebook/${ruleId}/versions`, RuleVersionsResponse),
+  rollbackRule: (ruleId: number, versionId: number) =>
+    request(`/rulebook/${ruleId}/rollback/${versionId}`, RollbackResult, { method: "POST" }),
 };
