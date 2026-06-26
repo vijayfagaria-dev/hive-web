@@ -4,8 +4,14 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useSpot } from "@/lib/queries";
 import { ReportForm } from "@/components/app/report-form";
+import { RulesMenu } from "@/components/app/rules-menu";
+import { ShameLeaderboard } from "@/components/app/shame-leaderboard";
+import { EmptyState } from "@/components/app/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+const inr = (n: number) => n.toLocaleString("en-IN");
 
 export default function SpotPage() {
   const params = useParams<{ spot: string }>();
@@ -14,9 +20,9 @@ export default function SpotPage() {
 
   return (
     <div className="flex min-h-svh flex-col">
-      <header className="flex items-center justify-between px-6 py-5">
+      <header className="flex items-center justify-between px-5 py-5">
         <Link href="/" className="font-mono text-sm font-semibold uppercase tracking-[0.2em]">
-          Hive
+          hive
         </Link>
         {data?.member ? (
           <Link href="/hive" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
@@ -29,35 +35,39 @@ export default function SpotPage() {
         )}
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-8">
+      <main className="mx-auto w-full max-w-xl flex-1 px-5 py-4">
         {isPending ? (
           <div className="space-y-4">
-            <div className="h-12 w-48 animate-pulse rounded-lg bg-white/5" />
-            <div className="h-40 animate-pulse rounded-2xl bg-white/5" />
+            <Skeleton className="mx-auto h-12 w-48" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
           </div>
         ) : isError || !data ? (
-          <div className="py-20 text-center">
-            <p className="text-6xl">🤷</p>
-            <h1 className="mt-4 text-2xl font-bold">No such spot.</h1>
-            <Link href="/" className={cn(buttonVariants({ variant: "outline" }), "mt-6 rounded-full")}>
-              Back to Hive
-            </Link>
-          </div>
+          <EmptyState
+            emoji="🤷"
+            title="No such spot"
+            note="That sticker doesn't map to a known spot."
+            action={
+              <Link href="/" className={cn(buttonVariants({ variant: "outline" }), "rounded-full")}>
+                Back to Hive
+              </Link>
+            }
+            className="min-h-[60svh]"
+          />
         ) : (
           <>
-            <header className="relative text-center">
+            <div className="relative text-center">
               <div
                 aria-hidden
-                className="pointer-events-none absolute left-1/2 top-0 -z-10 h-48 w-72 -translate-x-1/2 rounded-full bg-acid/10 blur-[100px]"
+                className="pointer-events-none absolute left-1/2 top-1/2 -z-10 size-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/15 blur-[90px]"
               />
-              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-                {data.config.emoji} {data.config.title}
-              </h1>
-              <p className="mt-4 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                <span className="text-acid">₹{data.pot.toLocaleString("en-IN")}</span> in the pot ·{" "}
-                {data.potCount} confirmed
+              <div className="text-5xl" aria-hidden>
+                {data.config.emoji}
+              </div>
+              <h1 className="mt-3 font-heading text-3xl font-bold tracking-tight sm:text-4xl">{data.config.title}</h1>
+              <p className="mt-3 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                <span className="text-acid">₹{inr(data.pot)}</span> in the pot · {data.potCount} confirmed
               </p>
-            </header>
+            </div>
 
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               {data.member ? (
@@ -79,48 +89,27 @@ export default function SpotPage() {
             </div>
 
             {data.member && data.rules.length > 0 && (
-              <section className="glass mt-10 rounded-2xl p-6">
+              <section className="glass mt-8 rounded-2xl p-5">
                 <h2 className="text-lg font-semibold">🚨 Report a fine here</h2>
                 <div className="mt-4">
-                  <ReportForm
-                    members={data.members}
-                    rulesByCategory={{ [data.config.category ?? "rules"]: data.rules }}
-                  />
+                  <ReportForm members={data.members} rulesByCategory={{ [data.config.category ?? "rules"]: data.rules }} />
                 </div>
               </section>
             )}
 
             {data.rules.length > 0 && (
-              <section className="mt-10">
+              <section className="mt-8">
                 <h2 className="text-lg font-semibold">📜 {data.config.title} rules</h2>
-                <ul className="mt-4 divide-y divide-white/8">
-                  {data.rules.map((r) => (
-                    <li key={r.id} className="flex items-center justify-between gap-4 py-2.5">
-                      <span>
-                        {r.isFavorite && "⭐ "}
-                        {r.text}
-                      </span>
-                      <span className="shrink-0 font-mono tabular-nums text-muted-foreground">₹{r.amount}</span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="mt-3">
+                  <RulesMenu rulesByCategory={{ [data.config.category ?? "Rules"]: data.rules }} />
+                </div>
               </section>
             )}
 
             {data.config.shame && data.hallOfShame.length > 0 && (
-              <section className="glass mt-10 rounded-2xl p-6">
-                <h2 className="text-lg font-semibold">🏆 Hall of Shame</h2>
-                <ul className="mt-4 divide-y divide-white/8">
-                  {data.hallOfShame.map((s, i) => (
-                    <li key={s.name + i} className="flex items-center gap-4 py-2.5">
-                      <span className="w-6 text-center font-mono text-sm tabular-nums text-muted-foreground">{i + 1}</span>
-                      <span className="flex-1">{s.name}</span>
-                      <span className={cn("w-16 text-right font-semibold tabular-nums", i === 0 && "text-acid")}>
-                        ₹{s.total.toLocaleString("en-IN")}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+              <section className="glass mt-8 rounded-2xl px-3 py-2">
+                <h2 className="px-2 py-2 text-lg font-semibold">🏆 Hall of Shame</h2>
+                <ShameLeaderboard rows={data.hallOfShame} />
               </section>
             )}
           </>

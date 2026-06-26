@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Fraunces } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, Fraunces, Poppins } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -11,11 +11,33 @@ const display = Fraunces({
   display: "swap",
   style: ["normal", "italic"],
 });
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Hive — the flat that keeps score",
   description:
     "House rules, fines, the pot, and a deliriously good-looking way to run a shared flat.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Hive", statusBarStyle: "default" },
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#9cce1e",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -24,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${sans.variable} ${mono.variable} ${display.variable} h-full antialiased`}
+      className={`${sans.variable} ${mono.variable} ${display.variable} ${poppins.variable} h-full antialiased`}
     >
       <body className="ambient grain flex min-h-full flex-col bg-background text-foreground">
         <Providers>{children}</Providers>

@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { Camera } from "lucide-react";
 import { useMe } from "@/lib/queries";
-import { Reveal } from "@/components/reveal";
 import { GettingHereCard } from "@/components/app/getting-here-card";
-import { ReportForm } from "@/components/app/report-form";
+import { RulesMenu } from "@/components/app/rules-menu";
+import { ShameLeaderboard } from "@/components/app/shame-leaderboard";
+import { EmptyState } from "@/components/app/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -13,92 +16,77 @@ export default function HivePage() {
 
   if (isPending) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4 px-6 py-12">
-        <div className="h-10 w-48 animate-pulse rounded-lg bg-white/5" />
-        <div className="h-40 animate-pulse rounded-2xl bg-white/5" />
-        <div className="h-60 animate-pulse rounded-2xl bg-white/5" />
-      </div>
+      <main className="mx-auto max-w-2xl space-y-6 px-5 py-10">
+        <Skeleton className="h-9 w-48" />
+        <Skeleton className="h-32 w-full rounded-2xl" />
+        <Skeleton className="h-24 w-full rounded-2xl" />
+        <Skeleton className="h-72 w-full rounded-2xl" />
+      </main>
     );
   }
   if (isError || !data) {
-    return <p className="mx-auto max-w-3xl px-6 py-12 text-muted-foreground">Couldn&apos;t load your hive.</p>;
+    return (
+      <EmptyState
+        emoji="🤷"
+        title="Couldn't load your hive"
+        note="Pull to refresh, or try again in a moment."
+        className="min-h-[60svh]"
+      />
+    );
   }
 
-  const { member, rulesByCategory, members, hallOfShame, gettingHere } = data;
+  const { member, rulesByCategory, hallOfShame, gettingHere } = data;
 
   return (
-    <main className="mx-auto max-w-3xl space-y-12 px-6 py-14">
-      <Reveal>
+    <main className="mx-auto max-w-2xl space-y-8 px-5 py-10">
+      <header>
         <p className="font-mono text-xs uppercase tracking-[0.3em] text-acid">Welcome home</p>
-        <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
-          Hey {member.name} 👋
-        </h1>
-      </Reveal>
+        <h1 className="mt-2 font-heading text-3xl font-bold tracking-tight sm:text-4xl">Hey {member.name} 👋</h1>
+      </header>
 
-      {gettingHere && (
-        <Reveal>
-          <GettingHereCard here={gettingHere} />
-        </Reveal>
-      )}
+      {gettingHere && <GettingHereCard here={gettingHere} />}
 
-      <Reveal>
-        <section className="glass rounded-2xl p-6">
-          <h2 className="text-lg font-semibold">🚨 Report a fine</h2>
-          <div className="mt-4">
-            <ReportForm members={members} rulesByCategory={rulesByCategory} />
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Owe something?{" "}
-            <Link href="/pay" className="font-medium text-acid underline-offset-4 hover:underline">
-              Pay into the pot →
-            </Link>
-          </p>
-        </section>
-      </Reveal>
+      <Link
+        href="/complaints/new"
+        className="group flex items-center gap-4 rounded-2xl bg-primary p-5 text-primary-foreground glow-acid transition-transform hover:-translate-y-0.5"
+      >
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-black/10">
+          <Camera className="size-5" />
+        </span>
+        <span className="flex-1">
+          <span className="block font-semibold">Report a complaint</span>
+          <span className="block text-sm opacity-80">Snap photo proof, then pick who & which rule.</span>
+        </span>
+        <span aria-hidden className="text-xl transition-transform group-hover:translate-x-1">→</span>
+      </Link>
 
-      <Reveal>
-        <section>
-          <h2 className="text-lg font-semibold">📜 House rules</h2>
-          <div className="mt-4 space-y-6">
-            {Object.entries(rulesByCategory).map(([cat, rules]) => (
-              <div key={cat}>
-                <h3 className="font-mono text-xs uppercase tracking-[0.2em] text-acid">{cat}</h3>
-                <ul className="mt-2 divide-y divide-white/8">
-                  {rules.map((r) => (
-                    <li key={r.id} className="flex items-center justify-between gap-4 py-2.5">
-                      <span>
-                        {r.isFavorite && "⭐ "}
-                        {r.text}
-                      </span>
-                      <span className="shrink-0 font-mono tabular-nums text-muted-foreground">₹{r.amount}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </section>
-      </Reveal>
+      <section>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold tracking-tight">📜 House rules</h2>
+          <Link href="/rules" className="font-mono text-xs uppercase tracking-wider text-acid hover:underline">
+            Search all →
+          </Link>
+        </div>
+        <div className="mt-4">
+          <RulesMenu rulesByCategory={rulesByCategory} />
+        </div>
+      </section>
 
-      {hallOfShame.length > 0 && (
-        <Reveal>
-          <section className="glass rounded-2xl p-6">
-            <h2 className="text-lg font-semibold">🏆 Hall of Shame</h2>
-            <ul className="mt-4 divide-y divide-white/8">
-              {hallOfShame.map((s, i) => (
-                <li key={s.name + i} className="flex items-center gap-4 py-2.5">
-                  <span className="w-6 text-center font-mono text-sm tabular-nums text-muted-foreground">{i + 1}</span>
-                  <span className="flex-1">{s.name}</span>
-                  <span className="text-sm text-muted-foreground">{s.fines} fines</span>
-                  <span className={cn("w-16 text-right font-semibold tabular-nums", i === 0 && "text-acid")}>
-                    ₹{s.total.toLocaleString("en-IN")}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </Reveal>
-      )}
+      <section className="glass rounded-2xl p-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold tracking-tight">🏆 Hall of Shame</h2>
+          <Link href="/shame" className="font-mono text-xs uppercase tracking-wider text-acid hover:underline">
+            Full board →
+          </Link>
+        </div>
+        <div className="mt-2">
+          {hallOfShame.length ? (
+            <ShameLeaderboard rows={hallOfShame.slice(0, 5)} />
+          ) : (
+            <EmptyState emoji="😇" title="Spotless… for now" note="No fines on the board yet." />
+          )}
+        </div>
+      </section>
 
       <p className="text-center">
         <Link href="/pay" className={cn(buttonVariants({ variant: "outline" }), "rounded-full")}>
