@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, ReactNode } from "react";
-import { Bell, Coins, Home, Plus, Scale, User } from "lucide-react";
+import { Bell, Coins, Home, Landmark, Plus, Scale, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SelfMember } from "@/lib/api";
 import { useNotifications, usePublicStats } from "@/lib/queries";
@@ -31,6 +31,13 @@ export function AppShell({ member, children }: { member: SelfMember; children: R
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-sm font-semibold tabular-nums">
             🫙 ₹{inr(data?.pot ?? 0)}
           </span>
+          <Link
+            href="/governance"
+            aria-label="Community Governance"
+            className="grid size-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Landmark className="size-5" />
+          </Link>
           <Link
             href="/notifications"
             aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
