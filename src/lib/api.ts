@@ -159,7 +159,30 @@ export const GettingHere = z
   .nullable();
 export type GettingHere = z.infer<typeof GettingHere>;
 
-export const UnpaidFine = z.object({ id: z.number(), amount: z.number(), rule: z.string().nullable() });
+export const UpiLinks = z.object({ any: z.string(), gpay: z.string(), phonepe: z.string(), paytm: z.string() });
+export type UpiLinks = z.infer<typeof UpiLinks>;
+
+// A payable UPI block, or { configured: false } when no pot VPA is set (backend degrades gracefully).
+export const UpiBlock = z.discriminatedUnion("configured", [
+  z.object({ configured: z.literal(false) }),
+  z.object({
+    configured: z.literal(true),
+    payeeVpa: z.string(),
+    payeeName: z.string(),
+    amount: z.number().nullable(),
+    currency: z.string(),
+    note: z.string(),
+    links: UpiLinks,
+  }),
+]);
+export type UpiBlock = z.infer<typeof UpiBlock>;
+
+export const UnpaidFine = z.object({
+  id: z.number(),
+  amount: z.number(),
+  rule: z.string().nullable(),
+  upi: UpiBlock,
+});
 export type UnpaidFine = z.infer<typeof UnpaidFine>;
 
 export const VoteTally = z.object({
@@ -390,7 +413,12 @@ export const DashboardResponse = z.object({
 });
 export type DashboardResponse = z.infer<typeof DashboardResponse>;
 
-export const PayResponse = z.object({ unpaid: z.array(UnpaidFine), walletQr: z.string().nullable() });
+export const PayResponse = z.object({
+  unpaid: z.array(UnpaidFine),
+  total: z.number(),
+  upi: UpiBlock,
+  walletQr: z.string().nullable(),
+});
 export type PayResponse = z.infer<typeof PayResponse>;
 
 export const SpotResponse = z.object({
