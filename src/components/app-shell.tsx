@@ -60,7 +60,7 @@ export function AppShell({ member, children }: { member: SelfMember; children: R
           <Tab href={homeHref} label="Home" icon={Home} active={on(homeHref, "/hive", "/dashboard")} />
           <Tab href="/complaints" label="Feed" icon={Scale} active={on("/complaints") && !on("/complaints/new")} />
           <Fab href="/complaints/new" active={on("/complaints/new")} />
-          <Tab href="/pay" label="Pot" icon={Coins} active={on("/pay")} />
+          <Tab href="/money" label="Money" icon={Coins} active={on("/money", "/pay")} />
           <Tab href="/settings" label="You" icon={User} active={on("/settings")} />
         </div>
       </nav>
