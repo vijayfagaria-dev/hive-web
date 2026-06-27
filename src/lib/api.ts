@@ -435,6 +435,76 @@ export const DashboardResponse = z.object({
 });
 export type DashboardResponse = z.infer<typeof DashboardResponse>;
 
+// ─── Money ledger ───
+export const MoneyLedgerEntry = z.object({
+  id: z.number(),
+  type: z.string(),
+  amount: z.number(), // signed: + credit (flat owes you), - debit (you owe)
+  reason: z.string(),
+  ts: z.string(),
+});
+export type MoneyLedgerEntry = z.infer<typeof MoneyLedgerEntry>;
+
+export const MoneyStatement = z.object({
+  memberId: z.number(),
+  rentSharePct: z.number().nullable(),
+  net: z.number(), // + flat owes you, - you owe
+  owes: z.number(),
+  owed: z.number(),
+  finesOwed: z.number(),
+  billsOwed: z.number(),
+  ledgerBalance: z.number(),
+  fines: z.array(z.object({ id: z.number(), amount: z.number(), rule: z.string().nullable() })),
+  bills: z.array(z.object({ billId: z.number(), type: z.string(), month: z.string(), amount: z.number() })),
+  ledger: z.array(MoneyLedgerEntry),
+});
+export type MoneyStatement = z.infer<typeof MoneyStatement>;
+
+export const Balance = z.object({
+  memberId: z.number(),
+  name: z.string(),
+  role: z.string(),
+  rentSharePct: z.number().nullable(),
+  net: z.number(),
+});
+export type Balance = z.infer<typeof Balance>;
+export const BalancesResponse = z.object({ balances: z.array(Balance) });
+
+export const SettlementRow = z.object({
+  id: z.number(),
+  periodFrom: z.string(),
+  periodTo: z.string(),
+  monthlyRent: z.number(),
+  pot: z.number(),
+  appliedToRent: z.number(),
+  leftover: z.number(),
+  note: z.string().nullable(),
+  ts: z.string(),
+});
+export const SettlementsResponse = z.object({ settlements: z.array(SettlementRow) });
+
+const PayoutLine = z.object({ memberId: z.number(), name: z.string(), amount: z.number() });
+export const SettlementPreview = z.object({
+  periodFrom: z.string(),
+  periodTo: z.string(),
+  monthlyRent: z.number(),
+  pot: z.number(),
+  appliedToRent: z.number(),
+  leftover: z.number(),
+  payouts: z.array(PayoutLine),
+  penalties: z.array(
+    z.object({
+      defaulterId: z.number(),
+      defaulterName: z.string(),
+      unpaid: z.number(),
+      amount: z.number(),
+      credits: z.array(PayoutLine),
+    }),
+  ),
+  settlementId: z.number().optional(), // present on close
+});
+export type SettlementPreview = z.infer<typeof SettlementPreview>;
+
 export const PayResponse = z.object({
   unpaid: z.array(UnpaidFine),
   total: z.number(),
@@ -626,6 +696,20 @@ export const api = {
     request("/bills", BillCreated, { method: "POST", body: JSON.stringify(body) }),
   disputeBill: (billId: number, reason?: string) =>
     request(`/bills/${billId}/dispute`, Ok, { method: "POST", body: JSON.stringify({ reason }) }),
+
+  // money ledger
+  myMoney: () => request("/money", MoneyStatement),
+  balances: () => request("/money/balances", BalancesResponse),
+  settlementsList: () => request("/money/settlements", SettlementsResponse),
+  settlementPreview: () => request("/money/settlement/preview", SettlementPreview),
+  closeSettlement: (note?: string) =>
+    request("/money/settlement/close", SettlementPreview, { method: "POST", body: JSON.stringify({ note }) }),
+  addCharge: (body: { type: string; total: number; reason: string; split: string }) =>
+    request("/money/ledger/charge", Ok, { method: "POST", body: JSON.stringify(body) }),
+  addCredit: (body: { memberId: number; type: string; amount: number; reason: string }) =>
+    request("/money/ledger/credit", Ok, { method: "POST", body: JSON.stringify(body) }),
+  setRentShares: (shares: Record<number, number>) =>
+    request("/household/rent-shares", Ok, { method: "POST", body: JSON.stringify({ shares }) }),
   markSharePaid: (billId: number, memberId: number) =>
     request(`/bills/${billId}/shares/${memberId}/paid`, Ok, { method: "POST" }),
 

@@ -15,6 +15,9 @@ export const qk = {
   householdMembers: ["household-members"] as const,
   member: (id: number) => ["household-member", id] as const,
   invites: ["household-invites"] as const,
+  money: ["money"] as const,
+  balances: ["money-balances"] as const,
+  settlements: ["money-settlements"] as const,
 };
 
 /** Invalidate everything that a complaint/pay action can change. */
@@ -24,6 +27,9 @@ function invalidateData(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: qk.pay });
   qc.invalidateQueries({ queryKey: qk.notifications });
   qc.invalidateQueries({ queryKey: qk.publicStats });
+  qc.invalidateQueries({ queryKey: qk.money });
+  qc.invalidateQueries({ queryKey: qk.balances });
+  qc.invalidateQueries({ queryKey: qk.settlements });
 }
 
 export function useAuth() {
@@ -309,5 +315,47 @@ export function usePreviewInvite(token: string) {
     queryFn: () => api.previewInvite(token),
     enabled: !!token,
     retry: false,
+  });
+}
+
+// ─── Money ledger ───
+export function useMyMoney() {
+  return useQuery({ queryKey: qk.money, queryFn: api.myMoney });
+}
+
+export function useBalances(enabled = true) {
+  return useQuery({ queryKey: qk.balances, queryFn: api.balances, enabled });
+}
+
+export function useSettlements(enabled = true) {
+  return useQuery({ queryKey: qk.settlements, queryFn: api.settlementsList, enabled });
+}
+
+export function useSetRentShares() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (shares: Record<number, number>) => api.setRentShares(shares),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.householdMembers });
+      invalidateData(qc);
+    },
+  });
+}
+
+export function useAddCharge() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: api.addCharge, onSuccess: () => invalidateData(qc) });
+}
+
+export function useAddCredit() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: api.addCredit, onSuccess: () => invalidateData(qc) });
+}
+
+export function useCloseSettlement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (note?: string) => api.closeSettlement(note),
+    onSuccess: () => invalidateData(qc),
   });
 }
