@@ -101,6 +101,14 @@ export function useCreateBill() {
   return useMutation({ mutationFn: api.createBill, onSuccess: () => invalidateData(qc) });
 }
 
+export function useDisputeBill() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ billId, reason }: { billId: number; reason?: string }) => api.disputeBill(billId, reason),
+    onSuccess: () => invalidateData(qc),
+  });
+}
+
 // ─── the complaint loop ───
 export function useComplaint(id: number) {
   return useQuery({
@@ -216,6 +224,10 @@ export function useSetWhatsapp() {
       qc.invalidateQueries({ queryKey: qk.me });
     },
   });
+}
+
+export function useChangePassword() {
+  return useMutation({ mutationFn: api.changePassword });
 }
 
 // ─── household user management ───

@@ -3,9 +3,11 @@
 import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth, useDashboard } from "@/lib/queries";
+import { useAuth, useDashboard, usePublicStats } from "@/lib/queries";
+import { GettingHereCard } from "@/components/app/getting-here-card";
 import { PotHero } from "@/components/app/pot-hero";
 import { DuesList } from "@/components/app/dues-list";
+import { BillsList } from "@/components/app/bills-list";
 import { RecentFeed } from "@/components/app/recent-feed";
 import { OverturnTable } from "@/components/app/overturn-table";
 import { EmptyState } from "@/components/app/empty-state";
@@ -32,6 +34,8 @@ export default function DashboardPage() {
   }, [member, router]);
 
   const { data, isPending } = useDashboard();
+  const gettingHere = usePublicStats().data?.gettingHere ?? null;
+  const activeBills = data?.bills.filter((b) => b.status === "pending" || b.status === "disputed") ?? [];
 
   if (member && member.role !== "tenant") return null;
 
@@ -52,6 +56,8 @@ export default function DashboardPage() {
     <main className="mx-auto max-w-2xl space-y-8 px-5 py-10">
       <PotHero pot={data.pot} count={data.potCount} />
 
+      {gettingHere && <GettingHereCard here={gettingHere} />}
+
       <Section
         title="Dues"
         action={
@@ -66,6 +72,19 @@ export default function DashboardPage() {
           <EmptyState emoji="🎉" title="All square" note="Nobody owes the pot right now." />
         )}
       </Section>
+
+      {activeBills.length > 0 && (
+        <Section
+          title="Bills awaiting confirmation"
+          action={
+            <Link href="/bills" className="font-mono text-xs uppercase tracking-wider text-acid hover:underline">
+              Bills →
+            </Link>
+          }
+        >
+          <BillsList bills={activeBills} />
+        </Section>
+      )}
 
       <Section
         title="Recent complaints"

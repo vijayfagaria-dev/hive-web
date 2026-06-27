@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
-import { useAuth, useDashboard, useMe } from "@/lib/queries";
+import { useAuth, useDashboard } from "@/lib/queries";
 import { DuesList } from "@/components/app/dues-list";
+import { BillsList } from "@/components/app/bills-list";
 import { BillCreateForm } from "@/components/app/bill-create-form";
 import { Sheet } from "@/components/app/sheet";
 import { EmptyState } from "@/components/app/empty-state";
@@ -19,7 +20,6 @@ export default function BillsPage() {
   }, [member, router]);
 
   const { data, isPending } = useDashboard();
-  const me = useMe();
   const [open, setOpen] = useState(false);
 
   if (member && member.role !== "tenant") return null;
@@ -38,7 +38,9 @@ export default function BillsPage() {
     <main className="mx-auto max-w-2xl space-y-6 px-5 py-8">
       <header>
         <h1 className="font-heading text-3xl font-bold tracking-tight">🧾 Bills &amp; dues</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Rent, house help, electricity, water — split point-in-time.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Paid a shared bill? Declare it — the flat has time to dispute, then it auto-confirms.
+        </p>
       </header>
 
       <button
@@ -46,8 +48,19 @@ export default function BillsPage() {
         onClick={() => setOpen(true)}
         className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary font-semibold text-primary-foreground glow-acid"
       >
-        <Plus className="size-5" /> Add a bill
+        <Plus className="size-5" /> I paid a bill
       </button>
+
+      <section>
+        <h2 className="text-lg font-semibold tracking-tight">Recent bills</h2>
+        <div className="mt-3">
+          {data.bills.length ? (
+            <BillsList bills={data.bills} />
+          ) : (
+            <EmptyState emoji="🧾" title="No bills yet" note="Declare one when you've paid a shared bill." />
+          )}
+        </div>
+      </section>
 
       <section className="glass rounded-2xl p-5">
         <h2 className="text-lg font-semibold tracking-tight">Who owes what</h2>
@@ -60,12 +73,8 @@ export default function BillsPage() {
         </div>
       </section>
 
-      <p className="text-center font-mono text-xs text-muted-foreground">
-        The API doesn&apos;t list bills yet — dues above reflect every split.
-      </p>
-
-      <Sheet open={open} onClose={() => setOpen(false)} title="Add a bill">
-        <BillCreateForm members={me.data?.members ?? []} onDone={() => setOpen(false)} />
+      <Sheet open={open} onClose={() => setOpen(false)} title="I paid a bill">
+        <BillCreateForm onDone={() => setOpen(false)} />
       </Sheet>
     </main>
   );
