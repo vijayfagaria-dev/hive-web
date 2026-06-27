@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ApiError, type BillType, type Member } from "@/lib/api";
+import { ApiError, type BillType } from "@/lib/api";
 import { useCreateBill } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
@@ -20,12 +20,11 @@ function thisMonth() {
 const fieldCls =
   "h-11 w-full rounded-xl border border-input bg-card px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30";
 
-export function BillCreateForm({ members, onDone }: { members: Member[]; onDone: () => void }) {
+export function BillCreateForm({ onDone }: { onDone: () => void }) {
   const create = useCreateBill();
   const [type, setType] = useState<BillType>("rent");
   const [total, setTotal] = useState("");
   const [month, setMonth] = useState(thisMonth());
-  const [paidBy, setPaidBy] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
   const amount = Number(total);
@@ -35,7 +34,7 @@ export function BillCreateForm({ members, onDone }: { members: Member[]; onDone:
     if (!canSubmit) return;
     setError(null);
     create.mutate(
-      { type, total: amount, month, paidBy: paidBy ? Number(paidBy) : null },
+      { type, total: amount, month },
       {
         onSuccess: onDone,
         onError: (e) => setError(e instanceof ApiError ? e.message : "Couldn't create that bill."),
@@ -83,20 +82,9 @@ export function BillCreateForm({ members, onDone }: { members: Member[]; onDone:
         </label>
       </div>
 
-      <label className="block">
-        <span className="font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">Paid by (optional)</span>
-        <select value={paidBy} onChange={(e) => setPaidBy(e.target.value)} className={cn(fieldCls, "mt-2")}>
-          <option value="">— nobody yet —</option>
-          {members.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <p className="text-xs text-muted-foreground">
-        Splits snapshot the current tenants — past months stay split the way they were.
+      <p className="rounded-xl bg-primary/5 px-3 py-2.5 text-xs text-muted-foreground">
+        You&apos;re recording that <b className="text-foreground">you paid this</b>. It splits across the
+        current tenants and everyone gets a window to dispute before it&apos;s confirmed.
       </p>
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
@@ -106,7 +94,7 @@ export function BillCreateForm({ members, onDone }: { members: Member[]; onDone:
         disabled={!canSubmit}
         className="h-11 w-full rounded-full bg-primary font-semibold text-primary-foreground disabled:opacity-50"
       >
-        {create.isPending ? "Creating…" : "Create bill & split"}
+        {create.isPending ? "Recording…" : "I paid this — split it"}
       </button>
     </div>
   );

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AuthForm } from "@/components/auth-form";
 
 export const metadata: Metadata = { title: "Log in · Hive" };
@@ -16,6 +17,13 @@ export default function LoginPage() {
       <div className="mt-9">
         <AuthForm mode="login" />
       </div>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Just visiting?{" "}
+        <Link href="/directions" className="font-medium text-foreground underline underline-offset-4">
+          Get directions
+        </Link>{" "}
+        — no account needed.
+      </p>
     </div>
   );
 }

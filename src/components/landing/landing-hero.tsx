@@ -110,6 +110,9 @@ export function LandingHero() {
           <span>hive</span>
         </div>
         <nav className="lh-nav">
+          <Link href="/directions" className="login">
+            Directions
+          </Link>
           <Link href="/login" className="login">
             Log in
           </Link>

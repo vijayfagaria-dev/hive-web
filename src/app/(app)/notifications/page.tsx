@@ -59,6 +59,7 @@ export default function NotificationsPage() {
     if (!n.read) markRead.mutate(n.id);
     if (n.proposalId) router.push(`/governance/proposals/${n.proposalId}`);
     else if (n.fineId) router.push(`/complaints/${n.fineId}`);
+    else if (n.billId) router.push("/bills");
   }
 
   return (
@@ -102,7 +103,7 @@ export default function NotificationsPage() {
                         {n.body && <span className="block text-sm text-muted-foreground">{n.body}</span>}
                         <span className="mt-0.5 block font-mono text-[0.65rem] text-muted-foreground">
                           {time(n.ts)}
-                          {n.fineId || n.proposalId ? " · tap to open" : ""}
+                          {n.fineId || n.proposalId || n.billId ? " · tap to open" : ""}
                         </span>
                       </span>
                       {!n.read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-acid" aria-hidden />}

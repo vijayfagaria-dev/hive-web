@@ -141,6 +141,7 @@ export const Notification = z.object({
   body: z.string().nullable(),
   fineId: z.number().nullable(),
   proposalId: z.number().nullable(),
+  billId: z.number().nullable(),
   read: z.boolean(),
   ts: z.string(),
 });
@@ -404,12 +405,33 @@ export const MeResponse = z.object({
 });
 export type MeResponse = z.infer<typeof MeResponse>;
 
+export const BillStatus = z.enum(["pending", "confirmed", "disputed"]);
+export type BillStatus = z.infer<typeof BillStatus>;
+
+export const DashboardBill = z.object({
+  id: z.number(),
+  type: z.string(),
+  total: z.number(),
+  month: z.string(),
+  status: BillStatus,
+  claimedBy: z.string().nullable(),
+  claimedById: z.number().nullable(),
+  claimedAt: z.string(),
+  confirmDeadline: z.string().nullable(),
+  disputedBy: z.string().nullable(),
+  disputeReason: z.string().nullable(),
+  resolvedAt: z.string().nullable(),
+  canDispute: z.boolean(),
+});
+export type DashboardBill = z.infer<typeof DashboardBill>;
+
 export const DashboardResponse = z.object({
   pot: z.number(),
   potCount: z.number(),
   dues: z.array(Due),
   recentFines: z.array(RecentComplaint),
   overturn: z.array(Overturn),
+  bills: z.array(DashboardBill),
 });
 export type DashboardResponse = z.infer<typeof DashboardResponse>;
 
@@ -443,6 +465,7 @@ export const PublicStats = z.object({
   pot: z.number(),
   potCount: z.number(),
   hallOfShame: z.array(ShameRow),
+  gettingHere: GettingHere, // public so visitors can get directions without an account
 });
 export type PublicStats = z.infer<typeof PublicStats>;
 
@@ -541,7 +564,7 @@ async function requestForm<T>(path: string, schema: z.ZodType<T>, body: FormData
 
 type Credentials = { username: string; password: string; email?: string | null; whatsapp?: string | null; invite?: string | null };
 type ComplaintBody = { accusedId: number; ruleId?: number; amount?: number; note?: string; images: File[] };
-type BillBody = { type: BillType; total: number; month: string; paidBy?: number | null };
+type BillBody = { type: BillType; total: number; month: string };
 type PushSub = { endpoint: string; keys: { p256dh: string; auth: string } };
 type ProposalCreateBody = {
   type: ProposalType;
@@ -601,6 +624,8 @@ export const api = {
   // bills (tenant)
   createBill: (body: BillBody) =>
     request("/bills", BillCreated, { method: "POST", body: JSON.stringify(body) }),
+  disputeBill: (billId: number, reason?: string) =>
+    request(`/bills/${billId}/dispute`, Ok, { method: "POST", body: JSON.stringify({ reason }) }),
   markSharePaid: (billId: number, memberId: number) =>
     request(`/bills/${billId}/shares/${memberId}/paid`, Ok, { method: "POST" }),
 
@@ -617,6 +642,8 @@ export const api = {
     request("/account/email", EmailResult, { method: "POST", body: JSON.stringify({ email }) }),
   setWhatsapp: (whatsapp: string | null) =>
     request("/account/whatsapp", WhatsappResult, { method: "POST", body: JSON.stringify({ whatsapp }) }),
+  changePassword: (body: { currentPassword: string; newPassword: string }) =>
+    request("/account/password", Ok, { method: "POST", body: JSON.stringify(body) }),
   pushPublicKey: () => request("/push/public-key", PushKey),
   pushSubscribe: (sub: PushSub) =>
     request("/push/subscribe", Ok, { method: "POST", body: JSON.stringify(sub) }),
