@@ -10,13 +10,11 @@ const inr = (n: number) => n.toLocaleString("en-IN");
 
 const CATEGORIES: { v: string; label: string; emoji: string }[] = [
   { v: "groceries", label: "Groceries", emoji: "🛒" },
-  { v: "electricity", label: "Electricity", emoji: "⚡" },
-  { v: "water", label: "Water", emoji: "🚰" },
+  { v: "maintenance", label: "Maintenance", emoji: "🔧" },
   { v: "internet", label: "Wifi", emoji: "📶" },
-  { v: "gas", label: "Gas", emoji: "🔥" },
   { v: "house_help", label: "House help", emoji: "🧹" },
-  { v: "cleaner", label: "Cleaner", emoji: "🧽" },
-  { v: "brokerage", label: "Brokerage", emoji: "🧑‍💼" },
+  { v: "cook", label: "Cook", emoji: "🍳" },
+  { v: "broker", label: "Broker", emoji: "🧑‍💼" },
   { v: "misc", label: "Misc", emoji: "🧾" },
 ];
 

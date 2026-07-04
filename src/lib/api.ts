@@ -526,7 +526,7 @@ export type SettlementPreview = z.infer<typeof SettlementPreview>;
 
 // ─── Expenses (the unified money model) ───
 export const ExpenseCategory = z.enum([
-  "electricity", "water", "house_help", "internet", "gas", "cleaner", "groceries", "brokerage", "misc",
+  "rent", "maintenance", "internet", "house_help", "cook", "groceries", "broker", "misc",
 ]);
 export type ExpenseCategory = z.infer<typeof ExpenseCategory>;
 

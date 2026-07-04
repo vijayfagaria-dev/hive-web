@@ -14,10 +14,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 const inr = (n: number) => n.toLocaleString("en-IN");
-const CATS = ["internet", "electricity", "water", "gas", "house_help", "cleaner", "groceries", "brokerage", "misc"];
+const CATS = ["maintenance", "internet", "house_help", "cook", "groceries", "broker", "misc"];
 const CAT_EMOJI: Record<string, string> = {
-  internet: "📶", electricity: "⚡", water: "🚰", gas: "🔥", house_help: "🧹",
-  cleaner: "🧽", groceries: "🛒", brokerage: "🧑‍💼", misc: "🧾",
+  rent: "🏠", maintenance: "🔧", internet: "📶", house_help: "🧹",
+  cook: "🍳", groceries: "🛒", broker: "🧑‍💼", misc: "🧾",
 };
 
 type Member = { memberId: number; name: string };
