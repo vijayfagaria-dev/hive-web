@@ -23,8 +23,8 @@ const inr = (n: number) => n.toLocaleString("en-IN");
 const thisMonth = () => new Date().toISOString().slice(0, 7);
 
 const CAT_EMOJI: Record<string, string> = {
-  groceries: "🛒", electricity: "⚡", water: "🚰", internet: "📶", gas: "🔥",
-  house_help: "🧹", cleaner: "🧽", brokerage: "🧑‍💼", misc: "🧾",
+  rent: "🏠", maintenance: "🔧", internet: "📶", house_help: "🧹",
+  cook: "🍳", groceries: "🛒", broker: "🧑‍💼", misc: "🧾",
 };
 
 type Tab = "expenses" | "settle" | "rent" | "recurring";

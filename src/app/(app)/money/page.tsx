@@ -214,7 +214,7 @@ function RentSharesCard() {
   return (
     <Card title="Rent shares">
       <p className="mb-3 text-sm text-muted-foreground">
-        Rent splits by these %. Other bills (wifi, electricity, house help) always split equally. Must total 100%.
+        Rent splits by these % (one tenant fronts it, the rest settles up). Other expenses (maintenance, wifi, groceries…) split however you pick when adding them. Must total 100%.
       </p>
       <div className="space-y-2">
         {tenants.map((t) => (
