@@ -10,7 +10,10 @@ const LABEL: Record<EventType, string> = {
   vote_cast: "Vote cast",
   vote_finalized: "Vote finalized",
   auto_confirmed: "Auto-confirmed",
-  paid: "Paid into the pot",
+  payment_due: "Registered — payment due",
+  overdue: "Payment overdue",
+  paid: "Marked paid into the pot",
+  settled: "Settled",
 };
 
 function when(ts: string) {
