@@ -505,6 +505,99 @@ export const SettlementPreview = z.object({
 });
 export type SettlementPreview = z.infer<typeof SettlementPreview>;
 
+// ─── Expenses (the unified money model) ───
+export const ExpenseCategory = z.enum([
+  "electricity", "water", "house_help", "internet", "gas", "cleaner", "groceries", "brokerage", "misc",
+]);
+export type ExpenseCategory = z.infer<typeof ExpenseCategory>;
+
+export const SplitStrategy = z.enum(["equal", "ratio", "percentage", "shares", "fixed", "custom"]);
+export type SplitStrategy = z.infer<typeof SplitStrategy>;
+
+export const Expense = z.object({
+  id: z.number(),
+  amount: z.number(),
+  category: z.string(),
+  description: z.string().nullable(),
+  strategy: z.string(),
+  payerId: z.number(),
+  payerName: z.string(),
+  incurredOn: z.string(),
+  month: z.string(),
+  status: z.string(),
+  createdAt: z.string(),
+});
+export type Expense = z.infer<typeof Expense>;
+export const ExpensesResponse = z.object({ expenses: z.array(Expense) });
+
+export const ExpenseDetail = Expense.omit({ payerName: true, createdAt: true }).extend({
+  splits: z.array(z.object({ memberId: z.number(), name: z.string(), owed: z.number() })),
+});
+export type ExpenseDetail = z.infer<typeof ExpenseDetail>;
+
+export const MyBalance = z.object({
+  memberId: z.number(),
+  net: z.number(),
+  owes: z.number(),
+  owed: z.number(),
+  expensesPaid: z.number(),
+  expenseShare: z.number(),
+  received: z.number(),
+  sent: z.number(),
+  ledgerBalance: z.number(),
+  finesOwed: z.number(),
+});
+export type MyBalance = z.infer<typeof MyBalance>;
+
+export const MemberBalance = z.object({
+  memberId: z.number(),
+  name: z.string(),
+  role: z.string(),
+  net: z.number(),
+});
+export type MemberBalance = z.infer<typeof MemberBalance>;
+export const BalancesResponse2 = z.object({ balances: z.array(MemberBalance) });
+
+const Transfer = z.object({
+  fromId: z.number(), fromName: z.string().nullable(),
+  toId: z.number(), toName: z.string().nullable(), amount: z.number(),
+});
+export const SettlePreview = z.object({
+  transfers: z.array(Transfer),
+  balances: z.array(MemberBalance),
+  settleRunId: z.number().optional(),
+});
+export type SettlePreview = z.infer<typeof SettlePreview>;
+
+export const RentStatus = z.object({
+  month: z.string(),
+  target: z.number(),
+  collected: z.number(),
+  remaining: z.number(),
+  complete: z.boolean(),
+  perTenant: z.array(z.object({ memberId: z.number(), name: z.string(), target: z.number(), paid: z.number() })),
+});
+export type RentStatus = z.infer<typeof RentStatus>;
+
+export const ExpenseTemplate = z.object({
+  id: z.number(), name: z.string(), category: z.string(), amount: z.number(),
+  defaultPayerId: z.number().nullable(), strategy: z.string(), params: z.record(z.string(), z.unknown()).nullable(),
+  participantIds: z.array(z.number()), active: z.boolean(),
+});
+export type ExpenseTemplate = z.infer<typeof ExpenseTemplate>;
+export const TemplatesResponse = z.object({ templates: z.array(ExpenseTemplate) });
+
+export const RecurringRow = z.object({
+  id: z.number(), templateId: z.number(), templateName: z.string(), category: z.string(),
+  amount: z.number(), dayOfMonth: z.number(), status: z.string(), lastGeneratedMonth: z.string().nullable(),
+});
+export const RecurringResponse = z.object({ recurring: z.array(RecurringRow) });
+
+export type ExpenseInput = {
+  payerId: number; amount: number; category: string; description?: string;
+  strategy: string; params?: Record<string, unknown> | null; participantIds: number[]; incurredOn?: string;
+};
+
 export const PayResponse = z.object({
   unpaid: z.array(UnpaidFine),
   total: z.number(),
@@ -710,6 +803,38 @@ export const api = {
     request("/money/ledger/credit", Ok, { method: "POST", body: JSON.stringify(body) }),
   setRentShares: (shares: Record<number, number>) =>
     request("/household/rent-shares", Ok, { method: "POST", body: JSON.stringify({ shares }) }),
+
+  // expenses (unified money model)
+  createExpense: (body: ExpenseInput) =>
+    request("/expenses", z.object({ ok: z.boolean(), expenseId: z.number() }), { method: "POST", body: JSON.stringify(body) }),
+  editExpense: (id: number, body: Omit<ExpenseInput, "payerId" | "incurredOn">) =>
+    request(`/expenses/${id}`, Ok, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteExpense: (id: number) => request(`/expenses/${id}`, Ok, { method: "DELETE" }),
+  listExpenses: (month?: string) =>
+    request(`/expenses${month ? `?month=${month}` : ""}`, ExpensesResponse),
+  expenseDetail: (id: number) => request(`/expenses/${id}`, ExpenseDetail),
+  recordPayment: (body: { fromId: number; toId?: number | null; amount: number; method?: string; note?: string }) =>
+    request("/payments", z.object({ ok: z.boolean(), paymentId: z.number() }), { method: "POST", body: JSON.stringify(body) }),
+  myBalance: () => request("/balances/me", MyBalance),
+  memberBalances: () => request("/balances", BalancesResponse2),
+  settlePreview: () => request("/settle/preview", SettlePreview),
+  settleClose: (note?: string) => request("/settle", SettlePreview, { method: "POST", body: JSON.stringify({ note }) }),
+  settleTxnPaid: (txnId: number) =>
+    request(`/settle/txn/${txnId}/paid`, z.object({ ok: z.boolean(), paymentId: z.number() }), { method: "POST" }),
+  rentStatus: (month: string) => request(`/rent/${month}`, RentStatus),
+  recordRent: (body: { memberId: number; amount: number; month: string }) =>
+    request("/rent", z.object({ ok: z.boolean(), collected: z.number(), remaining: z.number(), complete: z.boolean() }), { method: "POST", body: JSON.stringify(body) }),
+  listTemplates: () => request("/templates", TemplatesResponse),
+  createTemplate: (body: { name: string; category: string; amount: number; defaultPayerId?: number | null; strategy: string; params?: Record<string, unknown> | null; participantIds: number[] }) =>
+    request("/templates", z.object({ ok: z.boolean(), templateId: z.number() }), { method: "POST", body: JSON.stringify(body) }),
+  templatePrefill: (id: number, month?: string) =>
+    request(`/templates/${id}/prefill${month ? `?month=${month}` : ""}`, z.object({
+      payerId: z.number().nullable(), amount: z.number(), category: z.string(), description: z.string(),
+      strategy: z.string(), params: z.record(z.string(), z.unknown()).nullable(), participantIds: z.array(z.number()), incurredOn: z.string(),
+    })),
+  listRecurring: () => request("/recurring", RecurringResponse),
+  createRecurring: (body: { templateId: number; dayOfMonth: number }) =>
+    request("/recurring", z.object({ ok: z.boolean(), recurringId: z.number() }), { method: "POST", body: JSON.stringify(body) }),
   markSharePaid: (billId: number, memberId: number) =>
     request(`/bills/${billId}/shares/${memberId}/paid`, Ok, { method: "POST" }),
 
