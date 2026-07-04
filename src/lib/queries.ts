@@ -18,6 +18,13 @@ export const qk = {
   money: ["money"] as const,
   balances: ["money-balances"] as const,
   settlements: ["money-settlements"] as const,
+  expenses: (month?: string) => ["expenses", month ?? "all"] as const,
+  myBalance: ["my-balance"] as const,
+  memberBalances: ["member-balances"] as const,
+  settlePreview: ["settle-preview"] as const,
+  rent: (month: string) => ["rent", month] as const,
+  templates: ["expense-templates"] as const,
+  recurring: ["recurring"] as const,
 };
 
 /** Invalidate everything that a complaint/pay action can change. */
@@ -358,4 +365,74 @@ export function useCloseSettlement() {
     mutationFn: (note?: string) => api.closeSettlement(note),
     onSuccess: () => invalidateData(qc),
   });
+}
+
+// ─── Expenses (unified money model) ───
+function invalidateExpenses(qc: QueryClient) {
+  for (const k of [["expenses"], qk.myBalance, qk.memberBalances, qk.settlePreview, qk.dashboard, qk.notifications] as const) {
+    qc.invalidateQueries({ queryKey: k as readonly unknown[] });
+  }
+  qc.invalidateQueries({ queryKey: ["rent"] });
+}
+
+export function useMyBalance() {
+  return useQuery({ queryKey: qk.myBalance, queryFn: api.myBalance });
+}
+export function useMemberBalances(enabled = true) {
+  return useQuery({ queryKey: qk.memberBalances, queryFn: api.memberBalances, enabled });
+}
+export function useExpenses(month?: string) {
+  return useQuery({ queryKey: qk.expenses(month), queryFn: () => api.listExpenses(month) });
+}
+export function useSettlePreview(enabled = true) {
+  return useQuery({ queryKey: qk.settlePreview, queryFn: api.settlePreview, enabled });
+}
+export function useRentStatus(month: string) {
+  return useQuery({ queryKey: qk.rent(month), queryFn: () => api.rentStatus(month) });
+}
+export function useTemplates() {
+  return useQuery({ queryKey: qk.templates, queryFn: api.listTemplates });
+}
+export function useRecurring() {
+  return useQuery({ queryKey: qk.recurring, queryFn: api.listRecurring });
+}
+
+export function useCreateExpense() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: api.createExpense, onSuccess: () => invalidateExpenses(qc) });
+}
+export function useEditExpense() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: Parameters<typeof api.editExpense>[1] }) => api.editExpense(id, body),
+    onSuccess: () => invalidateExpenses(qc),
+  });
+}
+export function useDeleteExpense() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: number) => api.deleteExpense(id), onSuccess: () => invalidateExpenses(qc) });
+}
+export function useRecordPayment() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: api.recordPayment, onSuccess: () => invalidateExpenses(qc) });
+}
+export function useSettle() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (note?: string) => api.settleClose(note), onSuccess: () => invalidateExpenses(qc) });
+}
+export function useSettleTxnPaid() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (txnId: number) => api.settleTxnPaid(txnId), onSuccess: () => invalidateExpenses(qc) });
+}
+export function useRecordRent() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: api.recordRent, onSuccess: () => invalidateExpenses(qc) });
+}
+export function useCreateTemplate() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: api.createTemplate, onSuccess: () => qc.invalidateQueries({ queryKey: qk.templates }) });
+}
+export function useCreateRecurring() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: api.createRecurring, onSuccess: () => qc.invalidateQueries({ queryKey: qk.recurring }) });
 }
