@@ -89,18 +89,10 @@ export default function MoneyPage() {
             )}
           </section>
 
-          {/* Why — the breakdown */}
-          {(data.bills.length > 0 || data.fines.length > 0) && (
-            <Card title="What you owe">
+          {/* Why — unpaid fines */}
+          {data.fines.length > 0 && (
+            <Card title="Your unpaid fines">
               <ul className="space-y-2">
-                {data.bills.map((b) => (
-                  <li key={`bill-${b.billId}`} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-muted-foreground">
-                      {b.type === "rent" ? "🏠" : "🧾"} {b.type} · {b.month}
-                    </span>
-                    <b className="tabular-nums">₹{inr(b.amount)}</b>
-                  </li>
-                ))}
                 {data.fines.map((f) => (
                   <li key={`fine-${f.id}`} className="flex items-center justify-between gap-3 text-sm">
                     <span className="min-w-0 flex-1 truncate text-muted-foreground">🚨 {f.rule ?? "Fine"}</span>
@@ -116,6 +108,28 @@ export default function MoneyPage() {
                   Pay your fines (₹{inr(data.finesOwed)}) →
                 </Link>
               )}
+            </Card>
+          )}
+
+          {/* Shared expenses — the expense component now folded into your net */}
+          {(data.expensesPaid > 0 || data.expenseShare > 0) && (
+            <Card title="Shared expenses">
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">🧾 You paid for the flat</span>
+                  <b className="tabular-nums text-acid">+₹{inr(data.expensesPaid)}</b>
+                </li>
+                <li className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">🍽️ Your share of expenses</span>
+                  <b className="tabular-nums text-destructive">−₹{inr(data.expenseShare)}</b>
+                </li>
+              </ul>
+              <Link
+                href="/expenses"
+                className="mt-4 flex items-center justify-center gap-2 rounded-full border border-border py-2.5 text-sm font-medium"
+              >
+                Open expenses & settle up →
+              </Link>
             </Card>
           )}
 
@@ -143,11 +157,14 @@ export default function MoneyPage() {
             </Card>
           )}
 
-          {data.bills.length === 0 && data.fines.length === 0 && data.ledger.length === 0 && (
-            <Card>
-              <p className="text-center text-sm text-muted-foreground">Nothing on your ledger yet. 🎉</p>
-            </Card>
-          )}
+          {data.fines.length === 0 &&
+            data.ledger.length === 0 &&
+            data.expensesPaid === 0 &&
+            data.expenseShare === 0 && (
+              <Card>
+                <p className="text-center text-sm text-muted-foreground">Nothing on your ledger yet. 🎉</p>
+              </Card>
+            )}
 
           {isTenant && <AdminPanel />}
         </>

@@ -26,9 +26,17 @@ export type Vote = z.infer<typeof Vote>;
 
 export const EventType = z.enum([
   "raised", "accused_notified", "accepted", "disputed", "voting_started",
-  "members_notified", "vote_cast", "vote_finalized", "auto_confirmed", "paid",
+  "members_notified", "vote_cast", "vote_finalized", "auto_confirmed",
+  "payment_due", "overdue", "paid", "settled",
 ]);
 export type EventType = z.infer<typeof EventType>;
+
+/** A fine's PAYMENT lifecycle — separate from the complaint `status` (Bug 2).
+ *  Acceptance/registration creates the debt (owed); it never settles. */
+export const PaymentStatus = z.enum([
+  "not_owed", "owed", "overdue", "marked_paid", "settled",
+]);
+export type PaymentStatus = z.infer<typeof PaymentStatus>;
 
 export const ProofSource = z.enum(["upload", "telegram"]);
 export type ProofSource = z.infer<typeof ProofSource>;
@@ -112,6 +120,7 @@ export const RecentComplaint = z.object({
   amount: z.number(),
   status: Status,
   paid: z.boolean(),
+  paymentStatus: PaymentStatus.nullable(),
   date: z.string(),
 });
 export type RecentComplaint = z.infer<typeof RecentComplaint>;
@@ -168,11 +177,13 @@ export const UpiBlock = z.discriminatedUnion("configured", [
   z.object({ configured: z.literal(false) }),
   z.object({
     configured: z.literal(true),
+    scope: z.enum(["fine", "fines", "all"]).nullable(), // what this link settles (Bug 1)
     payeeVpa: z.string(),
     payeeName: z.string(),
     amount: z.number().nullable(),
     currency: z.string(),
     note: z.string(),
+    txnRef: z.string().nullable(), // reconciliation reference (e.g. HIVEFINE7)
     links: UpiLinks,
   }),
 ]);
@@ -203,6 +214,9 @@ export const ComplaintDetail = z.object({
   rule: z.string().nullable(),
   amount: z.number(),
   paid: z.boolean(),
+  paymentStatus: PaymentStatus, // Bug 2: owed / overdue / marked_paid / settled once registered
+  payBy: z.string().nullable(), // pay-by deadline while owed
+  paidAt: z.string().nullable(),
   disputeReason: z.string().nullable(),
   coolingDeadline: z.string().nullable(),
   voteDeadline: z.string().nullable(),
@@ -445,6 +459,9 @@ export const MoneyLedgerEntry = z.object({
 });
 export type MoneyLedgerEntry = z.infer<typeof MoneyLedgerEntry>;
 
+// Money collapse: `balances.py` is the single authority. Bills were retired from the
+// money net (expenses supersede them), so `billsOwed`/`bills` are gone and the expense
+// components (paid/share/received/sent) are folded into the net.
 export const MoneyStatement = z.object({
   memberId: z.number(),
   rentSharePct: z.number().nullable(),
@@ -452,10 +469,12 @@ export const MoneyStatement = z.object({
   owes: z.number(),
   owed: z.number(),
   finesOwed: z.number(),
-  billsOwed: z.number(),
+  expensesPaid: z.number(),
+  expenseShare: z.number(),
+  received: z.number(),
+  sent: z.number(),
   ledgerBalance: z.number(),
   fines: z.array(z.object({ id: z.number(), amount: z.number(), rule: z.string().nullable() })),
-  bills: z.array(z.object({ billId: z.number(), type: z.string(), month: z.string(), amount: z.number() })),
   ledger: z.array(MoneyLedgerEntry),
 });
 export type MoneyStatement = z.infer<typeof MoneyStatement>;
@@ -599,12 +618,18 @@ export type ExpenseInput = {
 };
 
 export const PayResponse = z.object({
-  unpaid: z.array(UnpaidFine),
-  total: z.number(),
-  upi: UpiBlock,
+  unpaid: z.array(UnpaidFine),         // each has its own `upi` (scope='fine') — pay one fine
+  totalOwed: z.number(),               // display figure, never a link on its own (Bug 1)
+  payAll: UpiBlock,                    // explicit "pay everything" payable (scope='all')
   walletQr: z.string().nullable(),
 });
 export type PayResponse = z.infer<typeof PayResponse>;
+
+const PayFinesResult = z.object({
+  paid: z.array(z.number()),
+  count: z.number(),
+  totalPaid: z.number(),
+});
 
 export const SpotResponse = z.object({
   spot: z.string(),
@@ -783,6 +808,9 @@ export const api = {
   // pay (read-only)
   pay: () => request("/pay", PayResponse),
   payFine: (id: number) => request(`/pay/${id}`, PayFineResult, { method: "POST" }),
+  // settle an explicit set of fines in one call — each fine independently (Bug 1)
+  payFines: (fineIds: number[]) =>
+    request("/pay", PayFinesResult, { method: "POST", body: JSON.stringify({ fineIds }) }),
 
   // bills (tenant)
   createBill: (body: BillBody) =>

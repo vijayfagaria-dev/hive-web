@@ -70,6 +70,9 @@ export default function ComplaintDetailPage() {
   }
 
   const banner = BANNER[c.phase];
+  const overdue = c.phase === "registered" && c.paymentStatus === "overdue";
+  const bannerCls = overdue ? "bg-destructive/12 text-destructive" : banner.cls;
+  const bannerEmoji = overdue ? "⏰" : banner.emoji;
   const ruleLabel = c.rule ?? "ad-hoc fine";
   const onAct = (fn: () => void) => {
     setActionError(null);
@@ -94,8 +97,8 @@ export default function ComplaintDetailPage() {
       </div>
 
       {/* status banner */}
-      <div className={cn("flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium", banner.cls)}>
-        <span className="text-lg" aria-hidden>{banner.emoji}</span>
+      <div className={cn("flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium", bannerCls)}>
+        <span className="text-lg" aria-hidden>{bannerEmoji}</span>
         <span className="flex-1">
           {c.phase === "raised" && (
             <>
@@ -117,10 +120,40 @@ export default function ComplaintDetailPage() {
               )}
             </>
           )}
-          {c.phase === "registered" && <>It stands — ₹{c.amount} into the jar. {c.paid ? "Paid 🎉" : "🎉"}</>}
+          {/* Bug 2: acceptance REGISTERS a debt (owed) — it isn't settled until paid. */}
+          {c.phase === "registered" &&
+            (c.paymentStatus === "settled" ? (
+              <>Settled — ₹{c.amount} in the jar. 🎉</>
+            ) : c.paymentStatus === "marked_paid" ? (
+              <>Marked paid — ₹{c.amount}, awaiting verification.</>
+            ) : c.paymentStatus === "overdue" ? (
+              <>Overdue — pay ₹{c.amount} into the jar now.</>
+            ) : (
+              <>
+                It stands — pay ₹{c.amount} into the jar
+                {c.payBy ? (
+                  <>
+                    {" · "}
+                    <VoteCountdown deadline={c.payBy} onExpire={() => refetch()} prefix="due in" />
+                  </>
+                ) : (
+                  "."
+                )}
+              </>
+            ))}
           {c.phase === "rejected" && <>Dropped — no fine.</>}
         </span>
       </div>
+
+      {/* pay CTA for a still-owed registered fine */}
+      {c.phase === "registered" && (c.paymentStatus === "owed" || c.paymentStatus === "overdue") && (
+        <Link
+          href="/pay"
+          className="flex items-center justify-center gap-2 rounded-full bg-primary py-2.5 text-sm font-semibold text-primary-foreground"
+        >
+          Pay ₹{c.amount} into the pot →
+        </Link>
+      )}
 
       {/* proof */}
       {c.proofs.length > 0 && (

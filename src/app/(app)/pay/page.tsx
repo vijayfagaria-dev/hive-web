@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- the wallet QR fallback is an external image URL. */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import QRCode from "react-qr-code";
 import { ApiError, type UnpaidFine, type UpiBlock } from "@/lib/api";
 import { usePay, usePayFine } from "@/lib/queries";
@@ -12,17 +12,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 const inr = (n: number) => n.toLocaleString("en-IN");
 type UpiReady = Extract<UpiBlock, { configured: true }>;
 
-const APPS: { key: keyof UpiReady["links"]; label: string; emoji: string }[] = [
-  { key: "gpay", label: "Google Pay", emoji: "🟢" },
-  { key: "phonepe", label: "PhonePe", emoji: "🟣" },
-  { key: "paytm", label: "Paytm", emoji: "🔵" },
-  { key: "any", label: "Any UPI app", emoji: "📲" },
+// The per-app links are Android `intent://` launchers (they fixed the "Insecure payment"
+// rejection — Bug 5) and only work on Android. On iOS we show just the QR + "Any UPI app".
+const isIOSDevice = () =>
+  typeof navigator !== "undefined" &&
+  (/iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+
+const APPS: { key: keyof UpiReady["links"]; label: string; emoji: string; androidOnly: boolean }[] = [
+  { key: "gpay", label: "Google Pay", emoji: "🟢", androidOnly: true },
+  { key: "phonepe", label: "PhonePe", emoji: "🟣", androidOnly: true },
+  { key: "paytm", label: "Paytm", emoji: "🔵", androidOnly: true },
+  { key: "any", label: "Any UPI app", emoji: "📲", androidOnly: false },
 ];
 
-function PayButtons({ links }: { links: UpiReady["links"] }) {
+function PayButtons({ links, ios }: { links: UpiReady["links"]; ios: boolean }) {
+  const apps = ios ? APPS.filter((a) => !a.androidOnly) : APPS;
   return (
     <div className="mt-4 grid grid-cols-2 gap-2">
-      {APPS.map((a) => (
+      {apps.map((a) => (
         <a
           key={a.key}
           href={links[a.key]}
@@ -35,7 +43,7 @@ function PayButtons({ links }: { links: UpiReady["links"] }) {
   );
 }
 
-function PotCard({ upi }: { upi: UpiReady }) {
+function PotCard({ upi, ios }: { upi: UpiReady; ios: boolean }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -49,7 +57,7 @@ function PotCard({ upi }: { upi: UpiReady }) {
   return (
     <section className="glass rounded-2xl p-6 text-center">
       <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
-        Scan to pay the jar{upi.amount ? ` · ₹${inr(upi.amount)}` : ""}
+        Pay it all{upi.amount ? ` · ₹${inr(upi.amount)}` : ""}
       </p>
       <div className="mx-auto mt-4 w-fit rounded-xl border border-border bg-white p-3">
         <QRCode value={upi.links.any} size={196} />
@@ -62,9 +70,11 @@ function PotCard({ upi }: { upi: UpiReady }) {
         <span className="font-mono">{upi.payeeVpa}</span>
         <span className="text-xs text-muted-foreground">{copied ? "copied ✓" : "tap to copy"}</span>
       </button>
-      <PayButtons links={upi.links} />
+      <PayButtons links={upi.links} ios={ios} />
       <p className="mt-3 text-xs text-muted-foreground">
-        Opens your UPI app with the amount filled in. Money goes straight to the jar — the app never touches it.
+        {ios
+          ? "Scan the QR with any UPI app — money goes straight to the jar; the app never touches it."
+          : "Opens your UPI app with the amount filled in. Money goes straight to the jar — the app never touches it."}
       </p>
     </section>
   );
@@ -75,6 +85,9 @@ export default function PayPage() {
   const payFine = usePayFine();
   const [confirm, setConfirm] = useState<UnpaidFine | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ios, setIos] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- detect the client platform once after mount (avoids an SSR hydration mismatch)
+  useEffect(() => setIos(isIOSDevice()), []);
 
   return (
     <main className="mx-auto max-w-xl space-y-6 px-5 py-8">
@@ -91,8 +104,8 @@ export default function PayPage() {
         <Skeleton className="h-64 w-full rounded-2xl" />
       ) : (
         <>
-          {data.upi.configured && data.total > 0 ? (
-            <PotCard upi={data.upi} />
+          {data.payAll.configured && data.totalOwed > 0 ? (
+            <PotCard upi={data.payAll} ios={ios} />
           ) : data.walletQr ? (
             <section className="glass rounded-2xl p-6 text-center">
               <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Scan to pay the jar&apos;s UPI</p>
@@ -102,7 +115,7 @@ export default function PayPage() {
                 className="mx-auto mt-4 size-56 rounded-xl border border-border bg-white object-contain p-2"
               />
             </section>
-          ) : data.total > 0 ? (
+          ) : data.totalOwed > 0 ? (
             <section className="rounded-2xl border border-dashed border-border bg-card p-5 text-sm text-muted-foreground">
               UPI isn&apos;t set up yet — pay the jar however the flat agreed, then mark it below.
             </section>
@@ -111,7 +124,7 @@ export default function PayPage() {
           <section>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold tracking-tight">Your unpaid fines</h2>
-              {data.total > 0 && <span className="font-semibold tabular-nums text-acid">₹{inr(data.total)} owed</span>}
+              {data.totalOwed > 0 && <span className="font-semibold tabular-nums text-acid">₹{inr(data.totalOwed)} owed</span>}
             </div>
             {data.unpaid.length > 0 ? (
               <ul className="mt-3 space-y-2">
