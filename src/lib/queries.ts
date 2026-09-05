@@ -422,7 +422,10 @@ export function useSettle() {
 }
 export function useSettleTxnPaid() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (txnId: number) => api.settleTxnPaid(txnId), onSuccess: () => invalidateExpenses(qc) });
+  return useMutation({
+    mutationFn: ({ txnId, amount }: { txnId: number; amount?: number }) => api.settleTxnPaid(txnId, amount),
+    onSuccess: () => invalidateExpenses(qc),
+  });
 }
 export function useRecordRent() {
   const qc = useQueryClient();

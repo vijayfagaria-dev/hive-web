@@ -580,6 +580,12 @@ export const BalancesResponse2 = z.object({ balances: z.array(MemberBalance) });
 const Transfer = z.object({
   fromId: z.number(), fromName: z.string().nullable(),
   toId: z.number(), toName: z.string().nullable(), amount: z.number(),
+  // Only on the persisted worklist (/settle close + /settle/open) — the live
+  // /settle/preview has no saved rows yet, so these are absent there.
+  txnId: z.number().optional(),
+  paidAmount: z.number().optional(),
+  remaining: z.number().optional(),
+  status: z.string().optional(),
 });
 export const SettlePreview = z.object({
   transfers: z.array(Transfer),
@@ -847,8 +853,19 @@ export const api = {
   memberBalances: () => request("/balances", BalancesResponse2),
   settlePreview: () => request("/settle/preview", SettlePreview),
   settleClose: (note?: string) => request("/settle", SettlePreview, { method: "POST", body: JSON.stringify({ note }) }),
-  settleTxnPaid: (txnId: number) =>
-    request(`/settle/txn/${txnId}/paid`, z.object({ ok: z.boolean(), paymentId: z.number() }), { method: "POST" }),
+  settleOpen: () => request("/settle/open", z.object({ transfers: z.array(Transfer) })),
+  // `amount` omitted clears whatever is outstanding; a smaller value is a part payment
+  // and leaves the remainder on the worklist.
+  settleTxnPaid: (txnId: number, amount?: number) =>
+    request(
+      `/settle/txn/${txnId}/paid`,
+      z.object({
+        ok: z.boolean(), paymentId: z.number(), amount: z.number().optional(),
+        paidAmount: z.number().optional(), remaining: z.number().optional(),
+        status: z.string().optional(),
+      }),
+      { method: "POST", body: JSON.stringify({ amount: amount ?? null }) },
+    ),
   rentStatus: (month: string) => request(`/rent/${month}`, RentStatus),
   recordRent: (body: { memberId: number; amount: number; month: string }) =>
     request("/rent", z.object({ ok: z.boolean(), collected: z.number(), remaining: z.number(), complete: z.boolean() }), { method: "POST", body: JSON.stringify(body) }),

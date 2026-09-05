@@ -173,36 +173,91 @@ function SettleTab({ meId }: { meId: number | null }) {
       </p>
       )}
       <ul className="space-y-2">
-        {data.transfers.map((t, i) => {
-          const iOwe = t.fromId === meId;
-          const owedToMe = t.toId === meId;
-          return (
-            <li key={i} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3">
-              <span className="text-sm">
-                {iOwe ? (
-                  <>You → <b>{t.toName}</b></>
-                ) : owedToMe ? (
-                  <><b>{t.fromName}</b> → you</>
-                ) : (
-                  <><b>{t.fromName}</b> → <b>{t.toName}</b></>
-                )}
-                <span className="ml-2 font-semibold tabular-nums">₹{inr(t.amount)}</span>
-              </span>
-              {iOwe && (
-                <button
-                  type="button"
-                  disabled={pay.isPending}
-                  onClick={() => pay.mutate({ fromId: t.fromId, toId: t.toId, amount: t.amount, note: "settle up" })}
-                  className="shrink-0 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-                >
-                  Mark paid
-                </button>
-              )}
-            </li>
-          );
-        })}
+        {data.transfers.map((t) => (
+          // Keyed by the amount too: once a part payment lands the preview recomputes and
+          // the row remounts, re-defaulting the input to what's actually left.
+          <SettleRow key={`${t.fromId}-${t.toId}-${t.amount}`} t={t} meId={meId} pay={pay} />
+        ))}
       </ul>
     </div>
+  );
+}
+
+/** One proposed transfer. If it's yours to pay, the amount is editable so you can pay
+ *  part of it now and the rest another day — the next preview shows what's still owed. */
+function SettleRow({
+  t,
+  meId,
+  pay,
+}: {
+  t: { fromId: number; fromName: string | null; toId: number; toName: string | null; amount: number };
+  meId: number | null;
+  pay: ReturnType<typeof useRecordPayment>;
+}) {
+  const iOwe = t.fromId === meId;
+  const owedToMe = t.toId === meId;
+  const [amt, setAmt] = useState(String(t.amount));
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const value = Number(amt);
+  const valid = Number.isInteger(value) && value > 0 && value <= t.amount;
+  const left = valid ? t.amount - value : 0;
+
+  return (
+    <li className="rounded-2xl border border-border bg-card px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm">
+          {iOwe ? (
+            <>You → <b>{t.toName}</b></>
+          ) : owedToMe ? (
+            <><b>{t.fromName}</b> → you</>
+          ) : (
+            <><b>{t.fromName}</b> → <b>{t.toName}</b></>
+          )}
+          <span className="ml-2 font-semibold tabular-nums">₹{inr(t.amount)}</span>
+        </span>
+        {iOwe && (
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="flex items-center rounded-full border border-border bg-background pl-3">
+              <span className="text-sm text-muted-foreground">₹</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={t.amount}
+                value={amt}
+                onChange={(e) => { setAmt(e.target.value); setMsg(null); }}
+                aria-label={`Amount to pay ${t.toName ?? "them"}`}
+                className="w-20 bg-transparent px-1.5 py-1.5 text-right text-sm tabular-nums outline-none"
+              />
+            </div>
+            <button
+              type="button"
+              disabled={pay.isPending || !valid}
+              onClick={() =>
+                pay.mutate(
+                  { fromId: t.fromId, toId: t.toId, amount: value, note: "settle up" },
+                  { onError: (e) => setMsg(e instanceof ApiError ? e.message : "Couldn't record that.") },
+                )
+              }
+              className="shrink-0 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              {valid && left > 0 ? "Pay part" : "Mark paid"}
+            </button>
+          </div>
+        )}
+      </div>
+      {iOwe && (
+        <p className="mt-1.5 text-right text-xs text-muted-foreground">
+          {!valid
+            ? `Enter an amount between ₹1 and ₹${inr(t.amount)}.`
+            : left > 0
+              ? `₹${inr(left)} will still be owed after this.`
+              : "Clears this transfer in full."}
+        </p>
+      )}
+      {msg && <p className="mt-1 text-right text-xs text-destructive">{msg}</p>}
+    </li>
   );
 }
 
