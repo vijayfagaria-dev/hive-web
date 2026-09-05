@@ -205,7 +205,8 @@ function SettleRow({
 
   return (
     <li className="rounded-2xl border border-border bg-card px-4 py-3">
-      <div className="flex items-center justify-between gap-3">
+      {/* wraps instead of overflowing once the controls no longer fit beside the label */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <span className="text-sm">
           {iOwe ? (
             <>You → <b>{t.toName}</b></>
@@ -217,9 +218,9 @@ function SettleRow({
           <span className="ml-2 font-semibold tabular-nums">₹{inr(t.amount)}</span>
         </span>
         {iOwe && (
-          <div className="flex shrink-0 items-center gap-2">
-            <div className="flex items-center rounded-full border border-border bg-background pl-3">
-              <span className="text-sm text-muted-foreground">₹</span>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
               <input
                 type="number"
                 inputMode="numeric"
@@ -228,7 +229,13 @@ function SettleRow({
                 value={amt}
                 onChange={(e) => { setAmt(e.target.value); setMsg(null); }}
                 aria-label={`Amount to pay ${t.toName ?? "them"}`}
-                className="w-20 bg-transparent px-1.5 py-1.5 text-right text-sm tabular-nums outline-none"
+                className={cn(
+                  "h-10 w-28 rounded-xl border border-input bg-card pl-7 pr-3 text-right text-sm tabular-nums outline-none",
+                  "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30",
+                  // the native spinners crowd a field this narrow
+                  "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+                  !valid && "border-destructive",
+                )}
               />
             </div>
             <button
@@ -240,7 +247,7 @@ function SettleRow({
                   { onError: (e) => setMsg(e instanceof ApiError ? e.message : "Couldn't record that.") },
                 )
               }
-              className="shrink-0 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+              className="h-10 shrink-0 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
             >
               {valid && left > 0 ? "Pay part" : "Mark paid"}
             </button>
@@ -248,7 +255,7 @@ function SettleRow({
         )}
       </div>
       {iOwe && (
-        <p className="mt-1.5 text-right text-xs text-muted-foreground">
+        <p className={cn("mt-1.5 text-right text-xs", valid ? "text-muted-foreground" : "text-destructive")}>
           {!valid
             ? `Enter an amount between ₹1 and ₹${inr(t.amount)}.`
             : left > 0
