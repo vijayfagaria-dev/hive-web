@@ -93,7 +93,7 @@ export default function ExpensesPage() {
         ))}
       </div>
 
-      {tab === "expenses" && <ExpensesTab />}
+      {tab === "expenses" && <ExpensesTab meId={me?.id ?? null} />}
       {tab === "settle" && <SettleTab meId={me?.id ?? null} />}
       {tab === "rent" && <RentTab members={members} />}
       {tab === "recurring" && <RecurringTab members={members} meId={me?.id ?? null} />}
@@ -103,13 +103,13 @@ export default function ExpensesPage() {
   );
 }
 
-function ExpensesTab() {
+function ExpensesTab({ meId }: { meId: number | null }) {
   const { data, isPending } = useExpenses();
   const del = useDeleteExpense();
   if (isPending || !data) return <Skeleton className="h-40 w-full rounded-2xl" />;
   if (!data.expenses.length)
     return <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No expenses yet — tap the I-paid button above.</p>;
-  return <ExpenseList expenses={data.expenses} onDelete={(id) => del.mutate(id)} />;
+  return <ExpenseList expenses={data.expenses} meId={meId} onDelete={(id) => del.mutate(id)} />;
 }
 
 function SettleTab({ meId }: { meId: number | null }) {

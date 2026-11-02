@@ -4,8 +4,17 @@ import { catEmoji } from "@/lib/categories";
 
 const inr = (n: number) => n.toLocaleString("en-IN");
 
-/** Expense rows — "A paid ₹X for …". Pass `onDelete` to show the delete control. */
-export function ExpenseList({ expenses, onDelete }: { expenses: Expense[]; onDelete?: (id: number) => void }) {
+/** Expense rows — "A paid ₹X for …". With `onDelete`, the payer's own rows get a delete
+ *  control (only the payer may delete; the API enforces it too). */
+export function ExpenseList({
+  expenses,
+  onDelete,
+  meId,
+}: {
+  expenses: Expense[];
+  onDelete?: (id: number) => void;
+  meId?: number | null;
+}) {
   return (
     <ul className="space-y-2">
       {expenses.map((e) => (
@@ -19,7 +28,7 @@ export function ExpenseList({ expenses, onDelete }: { expenses: Expense[]; onDel
               {e.status === "void" ? " · deleted" : ""}
             </p>
           </div>
-          {onDelete && e.status !== "void" && (
+          {onDelete && e.payerId === meId && e.status !== "void" && (
             <button
               type="button"
               onClick={() => onDelete(e.id)}
