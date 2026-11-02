@@ -17,7 +17,6 @@ import {
   type ProposalDetail,
   type ProposalEventType,
   type ProposalPhase,
-  type ProposalTally,
   type ProposalType,
 } from "./api";
 import { qk } from "./queries";
@@ -94,22 +93,11 @@ export function categoryEmoji(category: string | null | undefined): string {
   return CATEGORY_EMOJI.get(category.toLowerCase()) ?? "🏷️";
 }
 
-/** Display-only hint; the real threshold is enforced server-side (PROPOSAL_PASS_PCT). */
-export const PASS_PCT_HINT = 60;
-
 // ─── derived helpers (display only — no pass/fail logic) ───
 export function yesPct(t: { yes: number; no: number }): number {
   const decided = t.yes + t.no;
   return decided ? (t.yes / decided) * 100 : 0;
 }
-export const totalVotes = (t: ProposalTally): number => t.yes + t.no + t.abstain;
-export function leaning(t: ProposalTally): "yes" | "no" | "tie" {
-  if (t.yes > t.no) return "yes";
-  if (t.no > t.yes) return "no";
-  return "tie";
-}
-export const isLive = (phase: ProposalPhase): boolean => phase === "voting";
-export const isOpen = (phase: ProposalPhase): boolean => phase === "draft" || phase === "review" || phase === "voting";
 export const isResolved = (phase: ProposalPhase): boolean =>
   phase === "passed" || phase === "rejected" || phase === "cancelled";
 
@@ -146,14 +134,6 @@ export function useProposal(id: number) {
     queryFn: () => api.proposal(id),
     enabled: Number.isFinite(id) && id > 0,
     refetchOnWindowFocus: true,
-  });
-}
-
-export function useProposalVotes(id: number, enabled = true) {
-  return useQuery({
-    queryKey: gqk.proposalVotes(id),
-    queryFn: () => api.proposalVotes(id),
-    enabled: enabled && Number.isFinite(id) && id > 0,
   });
 }
 

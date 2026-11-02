@@ -703,10 +703,6 @@ const ProposalsResponse = z.object({ proposals: z.array(ProposalSummary) });
 const ProposalCreated = z.object({ ok: z.boolean(), proposalId: z.number() });
 const ProposalStatusResult = z.object({ ok: z.boolean(), status: ProposalStatus });
 const ProposalVoteResult = z.object({ ok: z.boolean(), tally: ProposalTally });
-const ProposalVotesResponse = z.object({
-  tally: z.object({ yes: z.number(), no: z.number(), abstain: z.number(), total: z.number().optional() }),
-  votes: z.array(VoteRow),
-});
 const ProposalTimelineResponse = z.object({ timeline: z.array(ProposalEvent) });
 const ProposalCommentsResponse = z.object({ comments: z.array(ProposalComment) });
 const CommentCreated = z.object({ ok: z.boolean(), commentId: z.number() });
@@ -716,7 +712,6 @@ const RollbackResult = z.object({ ok: z.boolean(), version: RuleVersion });
 
 // household wrappers
 const MembersResponse = z.object({ members: z.array(MemberAdmin) });
-const MemberDetailResponse = z.object({ member: MemberAdmin, events: z.array(MemberEvent).optional() });
 const MemberActionResult = z.object({ ok: z.boolean(), member: MemberAdmin });
 const InvitationsResponse = z.object({ invitations: z.array(Invitation) });
 const InviteCreated = z.object({ ok: z.boolean(), invitation: Invitation });
@@ -857,7 +852,6 @@ export const api = {
   // money ledger
   myMoney: () => request("/money", MoneyStatement),
   balances: () => request("/money/balances", BalancesResponse),
-  settlementsList: () => request("/money/settlements", SettlementsResponse),
   settlementPreview: () => request("/money/settlement/preview", SettlementPreview),
   closeSettlement: (note?: string) =>
     request("/money/settlement/close", SettlementPreview, { method: "POST", body: JSON.stringify({ note }) }),
@@ -871,8 +865,6 @@ export const api = {
   // expenses (unified money model)
   createExpense: (body: ExpenseInput) =>
     request("/expenses", z.object({ ok: z.boolean(), expenseId: z.number() }), { method: "POST", body: JSON.stringify(body) }),
-  editExpense: (id: number, body: Omit<ExpenseInput, "payerId" | "incurredOn">) =>
-    request(`/expenses/${id}`, Ok, { method: "PATCH", body: JSON.stringify(body) }),
   deleteExpense: (id: number) => request(`/expenses/${id}`, Ok, { method: "DELETE" }),
   listExpenses: (month?: string) =>
     request(`/expenses${month ? `?month=${month}` : ""}`, ExpensesResponse),
@@ -882,20 +874,7 @@ export const api = {
   myBalance: () => request("/balances/me", MyBalance),
   memberBalances: () => request("/balances", BalancesResponse2),
   settlePreview: () => request("/settle/preview", SettlePreview),
-  settleClose: (note?: string) => request("/settle", SettlePreview, { method: "POST", body: JSON.stringify({ note }) }),
   settleOpen: () => request("/settle/open", z.object({ transfers: z.array(Transfer) })),
-  // `amount` omitted clears whatever is outstanding; a smaller value is a part payment
-  // and leaves the remainder on the worklist.
-  settleTxnPaid: (txnId: number, amount?: number) =>
-    request(
-      `/settle/txn/${txnId}/paid`,
-      z.object({
-        ok: z.boolean(), paymentId: z.number(), amount: z.number().optional(),
-        paidAmount: z.number().optional(), remaining: z.number().optional(),
-        status: z.string().optional(),
-      }),
-      { method: "POST", body: JSON.stringify({ amount: amount ?? null }) },
-    ),
   rentStatus: (month: string) => request(`/rent/${month}`, RentStatus),
   recordRent: (body: { memberId: number; amount: number; month: string }) =>
     request("/rent", z.object({ ok: z.boolean(), collected: z.number(), remaining: z.number(), complete: z.boolean() }), { method: "POST", body: JSON.stringify(body) }),
@@ -951,7 +930,6 @@ export const api = {
     request(`/proposals/${id}/submit`, ProposalStatusResult, { method: "POST" }),
   voteProposal: (id: number, vote: ProposalChoice) =>
     request(`/proposals/${id}/vote`, ProposalVoteResult, { method: "POST", body: JSON.stringify({ vote }) }),
-  proposalVotes: (id: number) => request(`/proposals/${id}/votes`, ProposalVotesResponse),
   proposalTimeline: (id: number) => request(`/proposals/${id}/timeline`, ProposalTimelineResponse),
   proposalComments: (id: number) => request(`/proposals/${id}/comments`, ProposalCommentsResponse),
   addProposalComment: (id: number, body: string, parentId?: number | null) =>
@@ -983,7 +961,6 @@ export const api = {
   // household user management (manage controls are gated server-side by permission)
   listMembers: (includeInactive = false) =>
     request(`/household/members${includeInactive ? "?includeInactive=true" : ""}`, MembersResponse),
-  getMember: (id: number) => request(`/household/members/${id}`, MemberDetailResponse),
   renameMember: (id: number, name: string) =>
     request(`/household/members/${id}`, MemberActionResult, { method: "PATCH", body: JSON.stringify({ name }) }),
   setMemberRole: (id: number, role: Role) =>

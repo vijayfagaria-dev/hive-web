@@ -314,14 +314,6 @@ export function useHouseholdMembers(includeInactive = false) {
   });
 }
 
-export function useMember(id: number) {
-  return useQuery({
-    queryKey: qk.member(id),
-    queryFn: () => api.getMember(id),
-    enabled: Number.isFinite(id) && id > 0,
-  });
-}
-
 export function useSetMemberRole() {
   const qc = useQueryClient();
   return useMutation({
@@ -390,10 +382,6 @@ export function useBalances(enabled = true) {
   return useQuery({ queryKey: qk.balances, queryFn: api.balances, enabled });
 }
 
-export function useSettlements(enabled = true) {
-  return useQuery({ queryKey: qk.settlements, queryFn: api.settlementsList, enabled });
-}
-
 export function useSetRentShares() {
   const qc = useQueryClient();
   return useMutation({
@@ -457,13 +445,6 @@ export function useCreateExpense() {
   const qc = useQueryClient();
   return useMutation({ mutationFn: api.createExpense, onSuccess: () => invalidateExpenses(qc) });
 }
-export function useEditExpense() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, body }: { id: number; body: Parameters<typeof api.editExpense>[1] }) => api.editExpense(id, body),
-    onSuccess: () => invalidateExpenses(qc),
-  });
-}
 export function useDeleteExpense() {
   const qc = useQueryClient();
   return useMutation({ mutationFn: (id: number) => api.deleteExpense(id), onSuccess: () => invalidateExpenses(qc) });
@@ -471,17 +452,6 @@ export function useDeleteExpense() {
 export function useRecordPayment() {
   const qc = useQueryClient();
   return useMutation({ mutationFn: api.recordPayment, onSuccess: () => invalidateExpenses(qc) });
-}
-export function useSettle() {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (note?: string) => api.settleClose(note), onSuccess: () => invalidateExpenses(qc) });
-}
-export function useSettleTxnPaid() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ txnId, amount }: { txnId: number; amount?: number }) => api.settleTxnPaid(txnId, amount),
-    onSuccess: () => invalidateExpenses(qc),
-  });
 }
 export function useRecordRent() {
   const qc = useQueryClient();
