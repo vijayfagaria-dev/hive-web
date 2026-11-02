@@ -14,7 +14,7 @@ flat votes on disputes, shared expenses, rent and settle-up.
 ![TanStack Query](https://img.shields.io/badge/TanStack_Query-FF4154?logo=reactquery&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white)
 
-[Backend](https://github.com/vijayfagaria-dev/hive-api) · [Features](#features) · [Getting started](#getting-started)
+**[Live app](https://hive-flat.duckdns.org)** · [Backend](https://github.com/vijayfagaria-dev/hive-api) · [Features](#features) · [Getting started](#getting-started)
 
 </div>
 
