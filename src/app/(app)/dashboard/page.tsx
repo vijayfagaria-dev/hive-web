@@ -16,9 +16,9 @@ import { SpendingBreakdown } from "@/components/app/spending-breakdown";
 import { StatTile } from "@/components/app/stat-tile";
 import { CountUp } from "@/components/landing/count-up";
 import { Skeleton } from "@/components/ui/skeleton";
+import { thisMonth } from "@/lib/months";
 
 const inr = (n: number) => n.toLocaleString("en-IN");
-const thisMonth = () => new Date().toISOString().slice(0, 7);
 
 function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
   return (
@@ -34,7 +34,7 @@ function Section({ title, action, children }: { title: string; action?: ReactNod
 
 export default function DashboardPage() {
   const month = thisMonth();
-  const monthName = new Date(`${month}-01`).toLocaleString("en-IN", { month: "long" });
+  const monthName = new Date(`${month}-01T00:00`).toLocaleString("en-IN", { month: "long" });
   const me = useAuth().data?.member ?? null;
   const { data, isPending } = useDashboard();
   const bal = useMyBalance().data;

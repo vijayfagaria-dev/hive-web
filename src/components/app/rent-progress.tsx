@@ -1,4 +1,5 @@
 import type { RentStatus } from "@/lib/api";
+import { monthLabel } from "@/lib/months";
 import { cn } from "@/lib/utils";
 
 const inr = (n: number) => n.toLocaleString("en-IN");
@@ -9,7 +10,7 @@ export function RentProgress({ data }: { data: RentStatus }) {
   return (
     <div>
       <div className="flex items-center justify-between text-sm">
-        <span className="font-semibold">Rent · {data.month}</span>
+        <span className="font-semibold">Rent · {monthLabel(data.month)}</span>
         <span className={cn("font-semibold tabular-nums", data.complete ? "text-acid" : "text-muted-foreground")}>
           ₹{inr(data.collected)} / ₹{inr(data.target)}
         </span>

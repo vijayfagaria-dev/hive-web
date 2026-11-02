@@ -20,10 +20,10 @@ import { RecurringTab } from "@/components/app/recurring-tab";
 import { RentProgress } from "@/components/app/rent-progress";
 import { RoommateLedger } from "@/components/app/roommate-ledger";
 import { Skeleton } from "@/components/ui/skeleton";
+import { addMonths, monthLabel, thisMonth } from "@/lib/months";
 import { cn } from "@/lib/utils";
 
 const inr = (n: number) => n.toLocaleString("en-IN");
-const thisMonth = () => new Date().toISOString().slice(0, 7);
 
 type Tab = "expenses" | "settle" | "rent" | "recurring";
 
@@ -225,27 +225,77 @@ function SettleRow({
   );
 }
 
+// Rent can go to this month (default), one month ahead, or any of the past year — so a
+// short month can be paid off later and next month's rent paid early.
 function RentTab({ members }: { members: { memberId: number; name: string }[] }) {
-  const month = thisMonth();
+  const current = thisMonth();
+  const options = Array.from({ length: 13 }, (_, i) => addMonths(current, 1 - i)); // next … 11 back
+  const [month, setMonth] = useState(current);
   const { data, isPending } = useRentStatus(month);
+  const prevMonth = addMonths(current, -1);
+  const prev = useRentStatus(prevMonth).data;
   const rec = useRecordRent();
   const [who, setWho] = useState<string>("");
   const [amt, setAmt] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
 
-  if (isPending || !data) return <Skeleton className="h-40 w-full rounded-2xl" />;
-  if (!data.target)
+  const pick = (m: string) => {
+    setMonth(m);
+    setAmt("");
+    setMsg(null);
+  };
+  const tag = (m: string) => (m === current ? " · this month" : m > current ? " · next month" : "");
+
+  if (data && !data.target)
     return <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">Rent target isn&apos;t set up yet.</p>;
 
   return (
     <div className="space-y-4">
-      <section className="glass rounded-2xl p-5">
-        <RentProgress data={data} />
-      </section>
+      <label className="flex items-center justify-between gap-3 text-sm">
+        <span className="font-medium">Month</span>
+        <select
+          value={month}
+          onChange={(e) => pick(e.target.value)}
+          className="h-10 rounded-xl border border-input bg-card px-3 text-sm"
+        >
+          {options.map((m) => (
+            <option key={m} value={m}>{monthLabel(m)}{tag(m)}</option>
+          ))}
+        </select>
+      </label>
 
-      {!data.complete && (
+      {/* Only nudge about a month that was started but not finished. */}
+      {month !== prevMonth && prev && prev.collected > 0 && !prev.complete && (
+        <button
+          type="button"
+          onClick={() => pick(prevMonth)}
+          className="w-full rounded-2xl border border-destructive/30 bg-destructive/5 p-3 text-left text-sm"
+        >
+          {monthLabel(prevMonth)} still has <b className="tabular-nums">₹{inr(prev.remaining)}</b> to pay ·{" "}
+          <span className="font-semibold underline">Pay it</span>
+        </button>
+      )}
+
+      {isPending || !data ? (
+        <Skeleton className="h-40 w-full rounded-2xl" />
+      ) : (
+        <section className="glass rounded-2xl p-5">
+          <RentProgress data={data} />
+        </section>
+      )}
+
+      {data && !data.complete && (
         <section className="rounded-2xl border border-border bg-card p-4">
-          <p className="mb-2 text-sm font-medium">Record a rent payment</p>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">Record rent for {monthLabel(month)}</p>
+            <button
+              type="button"
+              onClick={() => setAmt(String(data.remaining))}
+              className="font-mono text-xs uppercase tracking-wider text-acid hover:underline"
+            >
+              Pay the rest · ₹{inr(data.remaining)}
+            </button>
+          </div>
           <div className="flex gap-2">
             <select value={who} onChange={(e) => setWho(e.target.value)} className="h-10 flex-1 rounded-xl border border-input bg-card px-3 text-sm">
               <option value="">Who paid?</option>
