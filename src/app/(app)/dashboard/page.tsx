@@ -71,6 +71,8 @@ export default function DashboardPage() {
         <h1 className="mt-2 font-heading text-3xl font-bold tracking-tight">Hey {me?.name} 👋</h1>
       </header>
 
+      {gettingHere && <GettingHereCard here={gettingHere} />}
+
       {/* KPI row — the three numbers a tenant opens the app for */}
       <div className="grid gap-4 sm:grid-cols-3">
         {bal ? (
@@ -159,8 +161,6 @@ export default function DashboardPage() {
           </Section>
         )}
       </div>
-
-      {gettingHere && <GettingHereCard here={gettingHere} />}
     </main>
   );
 }
