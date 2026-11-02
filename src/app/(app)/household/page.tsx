@@ -14,14 +14,17 @@ import { cn } from "@/lib/utils";
 
 const joined = (iso: string) => {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 };
+
+type Tab = "tenant" | "guest";
 
 export default function HouseholdPage() {
   const me = useMe().data?.member;
   const canManage = me?.role === "tenant";
   const { data, isPending, isError } = useHouseholdMembers(canManage);
   const [selected, setSelected] = useState<MemberAdmin | null>(null);
+  const [tab, setTab] = useState<Tab>("tenant");
 
   if (isPending) {
     return (
@@ -39,7 +42,12 @@ export default function HouseholdPage() {
     );
   }
 
-  const members = data.members;
+  const tenants = data.members.filter((m) => m.role === "tenant");
+  // Newest guest first; anyone who has left sinks below the current guests.
+  const guests = data.members
+    .filter((m) => m.role === "guest")
+    .sort((a, b) => Number(b.isActive) - Number(a.isActive) || b.joinedOn.localeCompare(a.joinedOn) || b.id - a.id);
+  const members = tab === "tenant" ? tenants : guests;
 
   return (
     <main className="mx-auto max-w-2xl space-y-6 px-5 py-8">
@@ -50,6 +58,38 @@ export default function HouseholdPage() {
           {canManage ? "Manage who's in the flat — roles, invites, and removals." : "Everyone currently in the flat."}
         </p>
       </header>
+
+      <div role="tablist" aria-label="Member type" className="flex gap-2">
+        {(
+          [
+            ["tenant", "Tenants", tenants.length],
+            ["guest", "Guests", guests.length],
+          ] as const
+        ).map(([k, label, count]) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={tab === k}
+            onClick={() => setTab(k)}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+              tab === k ? "bg-foreground text-background" : "border border-border text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {label}
+            <span className={cn("tabular-nums", tab === k ? "text-background/70" : "text-muted-foreground/70")}>{count}</span>
+          </button>
+        ))}
+      </div>
+
+      {members.length === 0 && (
+        <EmptyState
+          emoji={tab === "guest" ? "🚪" : "🏠"}
+          title={tab === "guest" ? "No guests yet" : "No tenants yet"}
+          note={tab === "guest" ? "Guests show up here once they sign up or redeem an invite." : undefined}
+        />
+      )}
 
       <ul className="space-y-2">
         {members.map((m) => {
