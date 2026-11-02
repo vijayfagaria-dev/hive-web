@@ -25,26 +25,27 @@ export function GettingHereCard({ here }: { here: GettingHere }) {
         <MapPin className="size-4" /> Getting here
       </div>
 
+      {here.unit && <p className="mt-3 text-lg font-semibold">{here.unit}</p>}
       {here.address && (
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <p className="text-lg">{here.address}</p>
-          <button onClick={copy} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1.5")}>
-            {copied ? <Check className="size-4 text-primary" /> : <Copy className="size-4" />}
-            {copied ? "Copied" : "Copy"}
-          </button>
-        </div>
+        <p className={cn(here.unit ? "mt-1 text-sm text-muted-foreground" : "mt-3 text-lg")}>{here.address}</p>
       )}
 
-      {here.directions && (
-        <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
+        {here.directions && (
           <a href={here.directions} target="_blank" rel="noopener" className={cn(buttonVariants({ size: "sm" }), "rounded-full")}>
             🧭 Navigate
           </a>
-          {here.uber && <a href={here.uber} target="_blank" rel="noopener" className={link()}>🚗 Uber</a>}
-          {here.ola && <a href={here.ola} target="_blank" rel="noopener" className={link()}>🟢 Ola</a>}
-          {here.rapido && <a href={here.rapido} target="_blank" rel="noopener" className={link()}>🛵 Rapido</a>}
-        </div>
-      )}
+        )}
+        {here.address && (
+          <button type="button" onClick={copy} className={link("gap-1.5")}>
+            {copied ? <Check className="size-4 text-primary" /> : <Copy className="size-4" />}
+            {copied ? "Copied" : "Copy address"}
+          </button>
+        )}
+        {here.uber && <a href={here.uber} target="_blank" rel="noopener" className={link()}>🚗 Uber</a>}
+        {here.ola && <a href={here.ola} target="_blank" rel="noopener" className={link()}>🟢 Ola</a>}
+        {here.rapido && <a href={here.rapido} target="_blank" rel="noopener" className={link()}>🛵 Rapido</a>}
+      </div>
       {here.directions && (
         <p className="mt-3 text-xs text-muted-foreground">
           Uber &amp; Ola pre-fill the flat; Rapido opens the app — paste the copied address.

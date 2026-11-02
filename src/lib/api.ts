@@ -159,6 +159,7 @@ export type Notification = z.infer<typeof Notification>;
 export const GettingHere = z
   .object({
     address: z.string(),
+    unit: z.string().optional(), // flat/block/floor — display only, never copied
     place: z.string().optional(),
     directions: z.string().optional(),
     geo: z.string().optional(),

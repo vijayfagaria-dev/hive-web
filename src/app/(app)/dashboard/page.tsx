@@ -48,7 +48,7 @@ export default function DashboardPage() {
     return (
       <main className="mx-auto max-w-5xl space-y-6 px-5 py-8">
         <Skeleton className="h-12 w-64" />
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-28 rounded-2xl" />
           ))}
@@ -74,7 +74,7 @@ export default function DashboardPage() {
       {gettingHere && <GettingHereCard here={gettingHere} />}
 
       {/* KPI row — the three numbers a tenant opens the app for */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {bal ? (
           <StatTile
             label={bal.net < 0 ? "You owe" : bal.net > 0 ? "You're owed" : "Your balance"}
@@ -102,7 +102,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Section title="Roommate ledger" action={link("/expenses", "Settle")}>
           {ledger ? <RoommateLedger rows={ledger} meId={me?.id} /> : <Skeleton className="h-32 w-full rounded-xl" />}
         </Section>
