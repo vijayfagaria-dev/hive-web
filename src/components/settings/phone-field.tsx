@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** Dial codes offered in the picker (India first). The API stores E.164: code + digits. */
@@ -53,18 +54,22 @@ export function PhoneField({ value, onChange, autoFocus }: { value: Phone; onCha
   const box = "h-11 rounded-xl border border-input bg-card text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30";
   return (
     <div className="flex gap-2">
-      <select
-        aria-label="Country code"
-        value={value.code}
-        onChange={(e) => onChange({ ...value, code: e.target.value })}
-        className={cn(box, "w-28 shrink-0 px-2")}
-      >
-        {options.map((c) => (
-          <option key={c.code} value={c.code}>
-            {c.flag} {c.code}
-          </option>
-        ))}
-      </select>
+      <div className="relative w-28 shrink-0">
+        <select
+          aria-label="Country code"
+          value={value.code}
+          onChange={(e) => onChange({ ...value, code: e.target.value })}
+          className={cn(box, "w-full cursor-pointer appearance-none pl-3 pr-9")}
+        >
+          {options.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.flag} {c.code}
+            </option>
+          ))}
+        </select>
+        {/* the native arrow is hidden (appearance-none) — draw the app's chevron instead */}
+        <ChevronDown aria-hidden className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+      </div>
       <input
         type="tel"
         inputMode="numeric"
