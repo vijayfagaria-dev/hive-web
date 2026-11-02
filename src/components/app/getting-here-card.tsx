@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Copy, MapPin } from "lucide-react";
 import type { GettingHere } from "@/lib/api";
+import { useIsIOS } from "@/lib/platform";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +11,10 @@ const link = (extra?: string) => cn(buttonVariants({ variant: "outline", size: "
 
 export function GettingHereCard({ here }: { here: GettingHere }) {
   const [copied, setCopied] = useState(false);
+  const ios = useIsIOS();
   if (!here) return null;
+  // Rapido can't take a pre-filled drop, so tapping it also copies the address to paste.
+  const rapido = ios ? here.rapidoWeb : here.rapido;
 
   async function copy() {
     if (!here?.address) return;
@@ -44,11 +48,15 @@ export function GettingHereCard({ here }: { here: GettingHere }) {
         )}
         {here.uber && <a href={here.uber} target="_blank" rel="noopener" className={link()}>🚗 Uber</a>}
         {here.ola && <a href={here.ola} target="_blank" rel="noopener" className={link()}>🟢 Ola</a>}
-        {here.rapido && <a href={here.rapido} target="_blank" rel="noopener" className={link()}>🛵 Rapido</a>}
+        {rapido && (
+          <a href={rapido} target="_blank" rel="noopener" onClick={copy} className={link()}>
+            🛵 Rapido
+          </a>
+        )}
       </div>
       {here.directions && (
         <p className="mt-3 text-xs text-muted-foreground">
-          Uber &amp; Ola pre-fill the flat; Rapido opens the app — paste the copied address.
+          Uber &amp; Ola pre-fill the flat. Rapido copies the address — paste it as your drop.
         </p>
       )}
     </section>

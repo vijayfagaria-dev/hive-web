@@ -167,7 +167,8 @@ export const GettingHere = z
     geo: z.string().optional(),
     uber: z.string().optional(),
     ola: z.string().optional(),
-    rapido: z.string().optional(),
+    rapido: z.string().optional(), // Android intent:// — iOS can't open it
+    rapidoWeb: z.string().optional(), // Rapido's mobile booking site, used on iOS
   })
   .nullable();
 export type GettingHere = z.infer<typeof GettingHere>;

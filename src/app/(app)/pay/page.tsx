@@ -1,10 +1,11 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- the wallet QR fallback is an external image URL. */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import QRCode from "react-qr-code";
 import { ApiError, type UnpaidFine, type UpiBlock } from "@/lib/api";
 import { usePay, usePayFine } from "@/lib/queries";
+import { useIsIOS } from "@/lib/platform";
 import { Sheet } from "@/components/app/sheet";
 import { EmptyState } from "@/components/app/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,10 +15,6 @@ type UpiReady = Extract<UpiBlock, { configured: true }>;
 
 // The per-app links are Android `intent://` launchers (they fixed the "Insecure payment"
 // rejection — Bug 5) and only work on Android. On iOS we show just the QR + "Any UPI app".
-const isIOSDevice = () =>
-  typeof navigator !== "undefined" &&
-  (/iP(hone|ad|od)/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
 
 const APPS: { key: keyof UpiReady["links"]; label: string; emoji: string; androidOnly: boolean }[] = [
   { key: "gpay", label: "Google Pay", emoji: "🟢", androidOnly: true },
@@ -85,9 +82,7 @@ export default function PayPage() {
   const payFine = usePayFine();
   const [confirm, setConfirm] = useState<UnpaidFine | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [ios, setIos] = useState(false);
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- detect the client platform once after mount (avoids an SSR hydration mismatch)
-  useEffect(() => setIos(isIOSDevice()), []);
+  const ios = useIsIOS();
 
   return (
     <main className="mx-auto max-w-xl space-y-6 px-5 py-8">

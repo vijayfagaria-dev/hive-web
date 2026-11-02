@@ -23,7 +23,7 @@ export function AppShell({ member, children }: { member: SelfMember; children: R
 
   return (
     <div className="flex min-h-svh flex-col">
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-white/40 bg-background/40 px-4 shadow-sm backdrop-blur-md backdrop-saturate-150">
         <Link href={homeHref} className="font-mono text-sm font-semibold uppercase tracking-[0.18em]">
           hive
         </Link>
@@ -55,7 +55,7 @@ export function AppShell({ member, children }: { member: SelfMember; children: R
 
       <main className="flex-1 pb-24">{children}</main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/40 bg-background/50 pb-[env(safe-area-inset-bottom)] backdrop-blur-md backdrop-saturate-150">
         <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center px-2">
           <Tab href={homeHref} label="Home" icon={Home} active={on(homeHref, "/hive", "/dashboard")} />
           {isTenant ? (
