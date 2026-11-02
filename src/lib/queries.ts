@@ -10,6 +10,7 @@ export const qk = {
   pay: ["pay"] as const,
   spot: (s: string) => ["spot", s] as const,
   publicStats: ["public-stats"] as const,
+  complaints: ["complaints"] as const,
   complaint: (id: number) => ["complaint", id] as const,
   notifications: ["notifications"] as const,
   householdMembers: ["household-members"] as const,
@@ -31,6 +32,7 @@ export const qk = {
 function invalidateData(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: qk.me });
   qc.invalidateQueries({ queryKey: qk.dashboard });
+  qc.invalidateQueries({ queryKey: qk.complaints });
   qc.invalidateQueries({ queryKey: qk.pay });
   qc.invalidateQueries({ queryKey: qk.notifications });
   qc.invalidateQueries({ queryKey: qk.publicStats });
@@ -82,6 +84,10 @@ export function useMe() {
 
 export function useDashboard() {
   return useQuery({ queryKey: qk.dashboard, queryFn: api.dashboard });
+}
+
+export function useComplaints() {
+  return useQuery({ queryKey: qk.complaints, queryFn: api.complaints });
 }
 
 export function usePay() {
@@ -244,11 +250,12 @@ export function useChangePassword() {
 }
 
 // ─── household user management ───
-/** A member change (role/remove/rename) ripples into the roster + /me + dashboard. */
+/** A member change (role/remove/rename) ripples into the roster + /me + dashboard + feed. */
 function invalidateHousehold(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: qk.householdMembers });
   qc.invalidateQueries({ queryKey: qk.me });
   qc.invalidateQueries({ queryKey: qk.dashboard });
+  qc.invalidateQueries({ queryKey: qk.complaints });
 }
 
 export function useHouseholdMembers(includeInactive = false) {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { PHASE_OF } from "@/lib/api";
-import { useAuth, useDashboard } from "@/lib/queries";
+import { useAuth, useComplaints } from "@/lib/queries";
 import { RecentFeed } from "@/components/app/recent-feed";
 import { EmptyState } from "@/components/app/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,7 +18,7 @@ type FilterKey = (typeof FILTERS)[number][0];
 
 export default function FeedPage() {
   const member = useAuth().data?.member ?? null;
-  const { data, isPending, isError } = useDashboard(); // the only complaint list the API exposes
+  const { data, isPending, isError } = useComplaints();
   const [filter, setFilter] = useState<FilterKey>("all");
 
   if (isPending) {
@@ -36,7 +36,7 @@ export default function FeedPage() {
     return <EmptyState emoji="🤷" title="Couldn't load the feed" className="min-h-[60svh]" />;
   }
 
-  const items = data.recentFines.filter((f) => {
+  const items = data.complaints.filter((f) => {
     if (filter === "me") return member ? f.accused === member.name : false;
     if (filter === "by") return member ? f.accuser === member.name : false;
     if (filter === "voting") return PHASE_OF[f.status] === "voting";

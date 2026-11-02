@@ -449,6 +449,8 @@ export const DashboardResponse = z.object({
 });
 export type DashboardResponse = z.infer<typeof DashboardResponse>;
 
+export const ComplaintsResponse = z.object({ complaints: z.array(RecentComplaint) });
+
 // ─── Money ledger ───
 export const MoneyLedgerEntry = z.object({
   id: z.number(),
@@ -795,6 +797,7 @@ export const api = {
   publicStats: () => request("/public/stats", PublicStats),
 
   // complaints (the core loop)
+  complaints: () => request("/complaints", ComplaintsResponse),
   createComplaint: (body: ComplaintBody) => {
     const fd = new FormData();
     fd.append("accusedId", String(body.accusedId));
