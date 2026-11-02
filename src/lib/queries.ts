@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { api, type ComplaintDetail, type Role, type Vote } from "./api";
+import { thisMonth } from "./months";
 
 export const qk = {
   auth: ["auth"] as const,
@@ -20,6 +21,7 @@ export const qk = {
   balances: ["money-balances"] as const,
   settlements: ["money-settlements"] as const,
   expenses: (month?: string) => ["expenses", month ?? "all"] as const,
+  spending: (current: string) => ["expenses", "spending", current] as const,
   myBalance: ["my-balance"] as const,
   memberBalances: ["member-balances"] as const,
   settlePreview: ["settle-preview"] as const,
@@ -427,6 +429,11 @@ export function useMemberBalances(enabled = true) {
 }
 export function useExpenses(month?: string) {
   return useQuery({ queryKey: qk.expenses(month), queryFn: () => api.listExpenses(month) });
+}
+/** This month + the six latest months with spending, newest first. */
+export function useSpending() {
+  const current = thisMonth();
+  return useQuery({ queryKey: qk.spending(current), queryFn: () => api.spending(current) });
 }
 export function useSettlePreview(enabled = true) {
   return useQuery({ queryKey: qk.settlePreview, queryFn: api.settlePreview, enabled });

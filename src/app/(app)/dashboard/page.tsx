@@ -1,8 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useAuth, useBalances, useDashboard, useExpenses, useMyBalance, usePublicStats, useRentStatus } from "@/lib/queries";
+import { useAuth, useBalances, useDashboard, useExpenses, useMyBalance, usePublicStats, useRentStatus, useSpending } from "@/lib/queries";
 import { GettingHereCard } from "@/components/app/getting-here-card";
 import { DuesList } from "@/components/app/dues-list";
 import { BillsList } from "@/components/app/bills-list";
@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/app/empty-state";
 import { ExpenseList } from "@/components/app/expense-list";
 import { RentProgress } from "@/components/app/rent-progress";
 import { RoommateLedger } from "@/components/app/roommate-ledger";
-import { SpendingBreakdown } from "@/components/app/spending-breakdown";
+import { MonthSelect, SpendingBreakdown, defaultSpendingMonth } from "@/components/app/spending-breakdown";
 import { StatTile } from "@/components/app/stat-tile";
 import { CountUp } from "@/components/landing/count-up";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,6 +42,9 @@ export default function DashboardPage() {
   const ledger = useBalances().data?.balances;
   const expenses = useExpenses().data?.expenses;
   const gettingHere = usePublicStats().data?.gettingHere ?? null;
+  const spendMonths = useSpending().data?.months;
+  const [pickedMonth, setPickedMonth] = useState<string | null>(null);
+  const spend = spendMonths?.find((m) => m.month === (pickedMonth ?? defaultSpendingMonth(spendMonths)));
   const activeBills = data?.bills.filter((b) => b.status === "pending" || b.status === "disputed") ?? [];
 
   if (isPending || !data) {
@@ -113,10 +116,25 @@ export default function DashboardPage() {
           </Section>
         ) : null}
 
-        {/* Rent has its own card — leaving it out keeps the other categories readable. */}
-        <Section title={`Shared spending · ${monthName}`}>
-          {expenses ? (
-            <SpendingBreakdown expenses={expenses.filter((e) => e.month === month && e.category !== "rent")} />
+        <Section
+          title="Spending"
+          action={spendMonths && spend && <MonthSelect months={spendMonths} value={spend.month} onChange={setPickedMonth} />}
+        >
+          {spend ? (
+            <>
+              <div className="mb-4 grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Whole flat</p>
+                  <p className="font-heading text-2xl font-bold tabular-nums">₹{inr(spend.total)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Your share</p>
+                  <p className="font-heading text-2xl font-bold tabular-nums">₹{inr(spend.mine)}</p>
+                </div>
+              </div>
+              <SpendingBreakdown rows={spend.categories.map((c) => ({ category: c.category, amount: c.total }))} />
+              <div className="mt-4 text-right">{link("/expenses?tab=spending", "Your spending by month")}</div>
+            </>
           ) : (
             <Skeleton className="h-32 w-full rounded-xl" />
           )}

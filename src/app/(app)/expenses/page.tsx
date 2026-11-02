@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { ApiError } from "@/lib/api";
 import {
@@ -16,6 +17,7 @@ import {
 } from "@/lib/queries";
 import { ExpenseList } from "@/components/app/expense-list";
 import { IPaidWizard } from "@/components/app/i-paid-wizard";
+import { MySpending } from "@/components/app/my-spending";
 import { RecurringTab } from "@/components/app/recurring-tab";
 import { RentProgress } from "@/components/app/rent-progress";
 import { RoommateLedger } from "@/components/app/roommate-ledger";
@@ -25,14 +27,16 @@ import { cn } from "@/lib/utils";
 
 const inr = (n: number) => n.toLocaleString("en-IN");
 
-type Tab = "expenses" | "settle" | "rent" | "recurring";
+const TABS = ["expenses", "spending", "settle", "rent", "recurring"] as const;
+type Tab = (typeof TABS)[number];
 
 export default function ExpensesPage() {
   const me = useAuth().data?.member ?? null;
   const bal = useMyBalance();
   const memberBalances = useMemberBalances();
   const members = (memberBalances.data?.balances ?? []).map((b) => ({ memberId: b.memberId, name: b.name }));
-  const [tab, setTab] = useState<Tab>("expenses");
+  const asked = useSearchParams().get("tab");
+  const [tab, setTab] = useState<Tab>(TABS.find((t) => t === asked) ?? "expenses");
   const [wizard, setWizard] = useState(false);
 
   return (
@@ -77,8 +81,8 @@ export default function ExpensesPage() {
       </button>
 
       {/* tabs */}
-      <div className="grid grid-cols-4 gap-2">
-        {(["expenses", "settle", "rent", "recurring"] as const).map((t) => (
+      <div className="grid grid-cols-5 gap-1.5">
+        {TABS.map((t) => (
           <button
             key={t}
             type="button"
@@ -94,6 +98,7 @@ export default function ExpensesPage() {
       </div>
 
       {tab === "expenses" && <ExpensesTab meId={me?.id ?? null} />}
+      {tab === "spending" && <MySpending />}
       {tab === "settle" && <SettleTab meId={me?.id ?? null} />}
       {tab === "rent" && <RentTab members={members} />}
       {tab === "recurring" && <RecurringTab members={members} meId={me?.id ?? null} />}

@@ -564,6 +564,17 @@ export const Expense = z.object({
 export type Expense = z.infer<typeof Expense>;
 export const ExpensesResponse = z.object({ expenses: z.array(Expense) });
 
+/** One month of spending: what the flat spent, my share of it and what I fronted. */
+export const SpendingMonth = z.object({
+  month: z.string(),
+  total: z.number(),
+  mine: z.number(),
+  paid: z.number(),
+  categories: z.array(z.object({ category: z.string(), total: z.number(), mine: z.number() })),
+});
+export type SpendingMonth = z.infer<typeof SpendingMonth>;
+export const SpendingResponse = z.object({ months: z.array(SpendingMonth) });
+
 export const ExpenseDetail = Expense.omit({ payerName: true, createdAt: true }).extend({
   splits: z.array(z.object({ memberId: z.number(), name: z.string(), owed: z.number() })),
 });
@@ -868,6 +879,7 @@ export const api = {
   deleteExpense: (id: number) => request(`/expenses/${id}`, Ok, { method: "DELETE" }),
   listExpenses: (month?: string) =>
     request(`/expenses${month ? `?month=${month}` : ""}`, ExpensesResponse),
+  spending: (current: string) => request(`/spending?current=${current}`, SpendingResponse),
   expenseDetail: (id: number) => request(`/expenses/${id}`, ExpenseDetail),
   recordPayment: (body: { fromId: number; toId?: number | null; amount: number; method?: string; note?: string }) =>
     request("/payments", z.object({ ok: z.boolean(), paymentId: z.number() }), { method: "POST", body: JSON.stringify(body) }),
