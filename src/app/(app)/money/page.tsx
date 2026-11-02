@@ -15,6 +15,7 @@ import {
 } from "@/lib/queries";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { RoommateLedger } from "@/components/app/roommate-ledger";
 
 const inr = (n: number) => n.toLocaleString("en-IN");
 
@@ -444,19 +445,7 @@ function BalancesCard() {
   if (!rows.length) return null;
   return (
     <Card title="Who's up, who's down">
-      <ul className="space-y-2">
-        {rows.map((b) => (
-          <li key={b.memberId} className="flex items-center justify-between gap-3 text-sm">
-            <span>
-              {b.name}
-              {b.rentSharePct != null && <span className="text-muted-foreground"> · {b.rentSharePct}%</span>}
-            </span>
-            <b className={cn("tabular-nums", b.net < 0 ? "text-destructive" : b.net > 0 ? "text-acid" : "")}>
-              {b.net < 0 ? `owes ₹${inr(-b.net)}` : b.net > 0 ? `+₹${inr(b.net)}` : "₹0"}
-            </b>
-          </li>
-        ))}
-      </ul>
+      <RoommateLedger rows={rows} />
     </Card>
   );
 }

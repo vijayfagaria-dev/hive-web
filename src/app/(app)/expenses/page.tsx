@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { ApiError } from "@/lib/api";
 import {
   useAuth,
@@ -14,18 +14,16 @@ import {
   useRentStatus,
   useSettlePreview,
 } from "@/lib/queries";
+import { ExpenseList } from "@/components/app/expense-list";
 import { IPaidWizard } from "@/components/app/i-paid-wizard";
 import { RecurringTab } from "@/components/app/recurring-tab";
+import { RentProgress } from "@/components/app/rent-progress";
+import { RoommateLedger } from "@/components/app/roommate-ledger";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 const inr = (n: number) => n.toLocaleString("en-IN");
 const thisMonth = () => new Date().toISOString().slice(0, 7);
-
-const CAT_EMOJI: Record<string, string> = {
-  rent: "🏠", maintenance: "🔧", internet: "📶", house_help: "🧹",
-  cook: "🍳", groceries: "🛒", broker: "🧑‍💼", misc: "🧾",
-};
 
 type Tab = "expenses" | "settle" | "rent" | "recurring";
 
@@ -111,57 +109,19 @@ function ExpensesTab() {
   if (isPending || !data) return <Skeleton className="h-40 w-full rounded-2xl" />;
   if (!data.expenses.length)
     return <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No expenses yet — tap the I-paid button above.</p>;
-  return (
-    <ul className="space-y-2">
-      {data.expenses.map((e) => (
-        <li key={e.id} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium">
-              {CAT_EMOJI[e.category] ?? "🧾"} {e.payerName} paid <b className="tabular-nums">₹{inr(e.amount)}</b>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {e.description || e.category} · {e.month}
-              {e.status === "void" ? " · deleted" : ""}
-            </p>
-          </div>
-          {e.status !== "void" && (
-            <button
-              type="button"
-              onClick={() => del.mutate(e.id)}
-              className="shrink-0 rounded-full p-2 text-muted-foreground hover:text-destructive"
-              aria-label="Delete expense"
-            >
-              <Trash2 className="size-4" />
-            </button>
-          )}
-        </li>
-      ))}
-    </ul>
-  );
+  return <ExpenseList expenses={data.expenses} onDelete={(id) => del.mutate(id)} />;
 }
 
 function SettleTab({ meId }: { meId: number | null }) {
   const { data, isPending } = useSettlePreview();
   const pay = useRecordPayment();
   if (isPending || !data) return <Skeleton className="h-40 w-full rounded-2xl" />;
-  const board = data.balances.filter((b) => b.net !== 0);
   return (
     <div className="space-y-3">
-      {board.length > 0 && (
-        <section className="glass rounded-2xl p-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Where everyone stands</p>
-          <ul className="space-y-1.5">
-            {board.map((b) => (
-              <li key={b.memberId} className="flex items-center justify-between text-sm">
-                <span>{b.name}</span>
-                <b className={cn("tabular-nums", b.net < 0 ? "text-destructive" : "text-acid")}>
-                  {b.net < 0 ? `owes ₹${inr(-b.net)}` : `gets ₹${inr(b.net)}`}
-                </b>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <section className="glass rounded-2xl p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Where everyone stands</p>
+        <RoommateLedger rows={data.balances} meId={meId} />
+      </section>
       {!data.transfers.length ? (
         <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">Everyone&apos;s square. Nothing to settle. 🎉</p>
       ) : (
@@ -277,32 +237,10 @@ function RentTab({ members }: { members: { memberId: number; name: string }[] })
   if (!data.target)
     return <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">Rent target isn&apos;t set up yet.</p>;
 
-  const pct = Math.min(100, Math.round((data.collected / data.target) * 100));
   return (
     <div className="space-y-4">
       <section className="glass rounded-2xl p-5">
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-semibold">Rent · {month}</span>
-          <span className={cn("font-semibold", data.complete ? "text-acid" : "text-muted-foreground")}>
-            ₹{inr(data.collected)} / ₹{inr(data.target)}
-          </span>
-        </div>
-        <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-muted">
-          <div className={cn("h-full rounded-full", data.complete ? "bg-acid" : "bg-primary")} style={{ width: `${pct}%` }} />
-        </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          {data.complete ? "Rent complete for the month 🎉" : `₹${inr(data.remaining)} still to collect.`}
-        </p>
-        <ul className="mt-3 space-y-1.5">
-          {data.perTenant.map((p) => (
-            <li key={p.memberId} className="flex items-center justify-between text-sm">
-              <span>{p.name}</span>
-              <span className={cn("tabular-nums", p.paid >= p.target ? "text-acid" : "text-muted-foreground")}>
-                ₹{inr(p.paid)} / ₹{inr(p.target)}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <RentProgress data={data} />
       </section>
 
       {!data.complete && (

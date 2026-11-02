@@ -5,18 +5,9 @@ import { ApiError } from "@/lib/api";
 import { useCreateExpense } from "@/lib/queries";
 import { Sheet } from "@/components/app/sheet";
 import { cn } from "@/lib/utils";
+import { SPLIT_CATEGORIES } from "@/lib/categories";
 
 const inr = (n: number) => n.toLocaleString("en-IN");
-
-const CATEGORIES: { v: string; label: string; emoji: string }[] = [
-  { v: "groceries", label: "Groceries", emoji: "🛒" },
-  { v: "maintenance", label: "Maintenance", emoji: "🔧" },
-  { v: "internet", label: "Wifi", emoji: "📶" },
-  { v: "house_help", label: "House help", emoji: "🧹" },
-  { v: "cook", label: "Cook", emoji: "🍳" },
-  { v: "broker", label: "Broker", emoji: "🧑‍💼" },
-  { v: "misc", label: "Misc", emoji: "🧾" },
-];
 
 type Member = { memberId: number; name: string };
 type SplitMode = "equal" | "percentage" | "custom";
@@ -132,7 +123,7 @@ export function IPaidWizard({
 
         {/* category */}
         <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((c) => (
+          {SPLIT_CATEGORIES.map((c) => (
             <button
               key={c.v}
               type="button"

@@ -12,13 +12,9 @@ import {
 } from "@/lib/queries";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { catEmoji, SPLIT_CATEGORIES } from "@/lib/categories";
 
 const inr = (n: number) => n.toLocaleString("en-IN");
-const CATS = ["maintenance", "internet", "house_help", "cook", "groceries", "broker", "misc"];
-const CAT_EMOJI: Record<string, string> = {
-  rent: "🏠", maintenance: "🔧", internet: "📶", house_help: "🧹",
-  cook: "🍳", groceries: "🛒", broker: "🧑‍💼", misc: "🧾",
-};
 
 type Member = { memberId: number; name: string };
 
@@ -84,7 +80,7 @@ export function RecurringTab({ members, meId }: { members: Member[]; meId: numbe
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (e.g. Wifi)" className="h-10 w-full rounded-xl border border-input bg-card px-3 text-sm" />
             <div className="flex gap-2">
               <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-10 flex-1 rounded-xl border border-input bg-card px-3 text-sm">
-                {CATS.map((c) => <option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}
+                {SPLIT_CATEGORIES.map((c) => <option key={c.v} value={c.v}>{c.emoji} {c.label}</option>)}
               </select>
               <input type="number" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="₹" className="h-10 w-24 rounded-xl border border-input bg-card px-3 text-sm" />
             </div>
@@ -102,7 +98,7 @@ export function RecurringTab({ members, meId }: { members: Member[]; meId: numbe
               return (
                 <li key={t.id} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3">
                   <span className="text-sm">
-                    {CAT_EMOJI[t.category] ?? "🧾"} <b>{t.name}</b> · ₹{inr(t.amount)}
+                    {catEmoji(t.category)} <b>{t.name}</b> · ₹{inr(t.amount)}
                     {isRecurring && <span className="ml-1 text-xs text-acid">· monthly</span>}
                   </span>
                   <span className="flex shrink-0 gap-2">
@@ -133,7 +129,7 @@ export function RecurringTab({ members, meId }: { members: Member[]; meId: numbe
           <ul className="mt-2 space-y-2">
             {recurring.data.recurring.map((r) => (
               <li key={r.id} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm">
-                <span>{CAT_EMOJI[r.category] ?? "🧾"} {r.templateName} · ₹{inr(r.amount)} · on the {r.dayOfMonth}</span>
+                <span>{catEmoji(r.category)} {r.templateName} · ₹{inr(r.amount)} · on the {r.dayOfMonth}</span>
                 <span className={cn("text-xs", r.status === "active" ? "text-acid" : "text-muted-foreground")}>{r.status}</span>
               </li>
             ))}
