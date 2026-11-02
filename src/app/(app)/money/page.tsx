@@ -386,7 +386,7 @@ function AddMoneyCard() {
       </div>
       {mode === "charge" ? (
         <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-[2fr_3fr] gap-2">
             <select value={type} onChange={(e) => setType(e.target.value)} className={fieldCls}>
               <option value="broker">Broker</option>
               <option value="deposit">Deposit</option>
