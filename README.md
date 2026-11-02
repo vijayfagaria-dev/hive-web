@@ -6,7 +6,7 @@ consumes the backend's JSON API. One opinionated design language, **"After Hours
 near-black canvas, an acid-lime accent, glassy surfaces, glowing hero numbers, monospace
 ledger details, and buttery (reduced-motion-safe) animation.
 
-The **backend (API + Telegram bot) is a separate repo** → [vijayfagaria-dev/hive-api](https://github.com/vijayfagaria-dev/hive-api).
+The **backend API is a separate repo** → [vijayfagaria-dev/hive-api](https://github.com/vijayfagaria-dev/hive-api).
 
 ## A look inside
 
@@ -63,5 +63,3 @@ npm start            # serve the production build
 
 > Placeholder visuals (the room gallery, the "residents") are intentional — drop real
 > photos into `public/` to replace them.
-
-The whole product design is in **[DESIGN.md](./DESIGN.md)** (the single source of truth).
