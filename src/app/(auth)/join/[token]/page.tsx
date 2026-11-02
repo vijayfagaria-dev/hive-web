@@ -53,7 +53,7 @@ export default function JoinPage() {
             .
           </p>
           <div className="mt-9">
-            <AuthForm mode="register" invite={token} />
+            <AuthForm mode="register" invite={token} inviteEmail={preview.data.email} />
           </div>
         </>
       )}

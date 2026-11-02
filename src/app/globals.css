@@ -182,6 +182,16 @@
   html { scroll-behavior: auto; }
 }
 
+/* OTP boxes nudge sideways on a wrong code (skipped under reduced motion). */
+@keyframes otp-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*="otp-shake"] { animation: none !important; }
+}
+
 /* Confetti (fired on a complaint reaching "registered"). */
 @keyframes confetti-fall {
   0% { transform: translateY(0) rotate(var(--rot, 0deg)); opacity: 1; }

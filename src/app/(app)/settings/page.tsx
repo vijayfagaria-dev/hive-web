@@ -3,18 +3,23 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, Download, KeyRound, LogOut, Mail, MessageCircle, Share, Users } from "lucide-react";
-import { api, ApiError } from "@/lib/api";
+import { BadgeCheck, Bell, CircleAlert, Download, KeyRound, LogOut, Mail, MessageCircle, MonitorSmartphone, Share, Users } from "lucide-react";
+import { api, ApiError, type Verification } from "@/lib/api";
+import { passwordAcceptable } from "@/lib/password";
 import {
   useChangePassword,
   useLogout,
+  useLogoutAll,
   useMe,
   usePushPublicKey,
   useSetEmail,
   useSetWhatsapp,
+  useVerifyEmail,
 } from "@/lib/queries";
 import { usePwaInstall } from "@/lib/use-pwa";
 import { Sheet } from "@/components/app/sheet";
+import { OtpStep } from "@/components/auth/otp-step";
+import { PasswordField } from "@/components/auth/password-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -38,13 +43,17 @@ export default function SettingsPage() {
   const setEmail = useSetEmail();
   const setWhatsapp = useSetWhatsapp();
   const changePassword = useChangePassword();
+  const verifyEmail = useVerifyEmail();
   const logout = useLogout();
+  const logoutAll = useLogoutAll();
   const pushKey = usePushPublicKey();
   const pwa = usePwaInstall();
 
   const [email, setEmailV] = useState("");
   const [whatsapp, setWhatsappV] = useState("");
   const [contactMsg, setContactMsg] = useState<string | null>(null);
+  // A new/unverified email waiting on its code (the old address stays until verified).
+  const [emailPending, setEmailPending] = useState<Verification | null>(null);
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMsg, setPushMsg] = useState<string | null>(null);
@@ -80,22 +89,53 @@ export default function SettingsPage() {
     );
   }
 
+  const currentEmail = me.member.email ?? "";
+  const emailVerified = me.member.emailVerified;
+
   function saveContacts() {
     setContactMsg(null);
     const e = email.trim();
     const w = whatsapp.trim();
+    // Only send the email if it changed — a new address triggers a verification code.
+    const emailChanged = e.toLowerCase() !== currentEmail.toLowerCase();
     Promise.all([
-      setEmail.mutateAsync(e || null),
+      emailChanged ? setEmail.mutateAsync(e || null) : Promise.resolve(null),
       setWhatsapp.mutateAsync(w || null),
     ])
-      .then(() => setContactMsg("Saved ✅"))
+      .then(([emailRes]) => {
+        if (emailRes?.pending) {
+          setEmailPending(emailRes.pending);
+          setContactMsg("Saved — confirm your new email with the code we sent.");
+        } else {
+          setContactMsg("Saved ✅");
+        }
+      })
       .catch((err) => setContactMsg(err instanceof ApiError ? err.message : "Couldn't save."));
+  }
+
+  function startVerifyCurrent() {
+    setContactMsg(null);
+    setEmail
+      .mutateAsync(currentEmail)
+      .then((res) => setEmailPending(res.pending))
+      .catch((err) => setContactMsg(err instanceof ApiError ? err.message : "Couldn't send a code."));
+  }
+
+  function cancelEmailChange() {
+    setEmailPending(null);
+    setEmailV(currentEmail);
+    setContactMsg(null);
+  }
+
+  function logoutEverywhere() {
+    if (!window.confirm("Sign out of Hive on every device, including this one?")) return;
+    logoutAll.mutate(undefined, { onSuccess: () => router.replace("/login") });
   }
 
   async function changePw() {
     setPwMsg(null);
-    if (newPw.length < 6) {
-      setPwMsg("New password must be at least 6 characters.");
+    if (!passwordAcceptable(newPw, me?.member.username ?? undefined)) {
+      setPwMsg("Pick a stronger new password — see the checklist.");
       return;
     }
     if (newPw !== confirmPw) {
@@ -107,7 +147,7 @@ export default function SettingsPage() {
       setCurPw("");
       setNewPw("");
       setConfirmPw("");
-      setPwMsg("Password updated ✅");
+      setPwMsg("Password updated ✅ — other devices were signed out.");
     } catch (err) {
       setPwMsg(err instanceof ApiError ? err.message : "Couldn't change password.");
     }
@@ -178,11 +218,67 @@ export default function SettingsPage() {
         <h2 className="text-base font-semibold">Get notified</h2>
         <p className="mt-1 text-sm text-muted-foreground">So Hive can ping you the moment you&apos;re accused.</p>
         <label className="mt-4 block">
-          <span className="mb-1.5 flex items-center gap-1.5 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
-            <Mail className="size-3.5" /> Email
+          <span className="mb-1.5 flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
+              <Mail className="size-3.5" /> Email
+            </span>
+            {emailPending ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-chart-4/15 px-2 py-0.5 text-[0.7rem] font-medium text-foreground">
+                <Mail className="size-3.5" /> Awaiting code
+              </span>
+            ) : currentEmail &&
+              (emailVerified ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[0.7rem] font-medium text-accent-foreground">
+                  <BadgeCheck className="size-3.5" /> Verified
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-chart-4/15 px-2 py-0.5 text-[0.7rem] font-medium text-foreground">
+                  <CircleAlert className="size-3.5" /> Unverified
+                </span>
+              ))}
           </span>
-          <input type="email" value={email} onChange={(e) => setEmailV(e.target.value)} placeholder="you@flat.com" className={fieldCls} />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmailV(e.target.value)}
+            placeholder="you@flat.com"
+            disabled={!!emailPending}
+            className={cn(fieldCls, "disabled:opacity-60")}
+          />
         </label>
+        {currentEmail && !emailVerified && !emailPending && email.trim().toLowerCase() === currentEmail.toLowerCase() && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Verify this address so password resets reach you.{" "}
+            <button
+              type="button"
+              onClick={startVerifyCurrent}
+              disabled={setEmail.isPending}
+              className="font-medium text-foreground underline underline-offset-4 disabled:opacity-50"
+            >
+              Send code
+            </button>
+          </p>
+        )}
+        {emailPending && (
+          <div className="mt-4 rounded-xl border border-border bg-background/60 p-4">
+            <OtpStep
+              compact
+              verification={emailPending}
+              submitLabel="Confirm email"
+              onVerify={(code) =>
+                verifyEmail.mutateAsync({ email: emailPending.email, code }).then(() => {
+                  setEmailPending(null);
+                  setContactMsg("Email verified ✅");
+                })
+              }
+              onResend={() =>
+                api.resendEmailCode(emailPending.email).then((r) => r.pending ?? emailPending)
+              }
+              onBack={cancelEmailChange}
+              backLabel="Cancel"
+            />
+          </div>
+        )}
         <label className="mt-3 block">
           <span className="mb-1.5 flex items-center gap-1.5 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
             <MessageCircle className="size-3.5" /> WhatsApp
@@ -206,7 +302,9 @@ export default function SettingsPage() {
         <h2 className="flex items-center gap-2 text-base font-semibold">
           <KeyRound className="size-4" /> Change password
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">Update the password you log in with.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Update the password you log in with. Other devices get signed out.
+        </p>
         <label className="mt-4 block">
           <span className="mb-1.5 block font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">Current password</span>
           <input
@@ -219,13 +317,14 @@ export default function SettingsPage() {
         </label>
         <label className="mt-3 block">
           <span className="mb-1.5 block font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">New password</span>
-          <input
-            type="password"
+          <PasswordField
             autoComplete="new-password"
             value={newPw}
-            onChange={(e) => setNewPw(e.target.value)}
-            placeholder="at least 6 characters"
-            className={fieldCls}
+            onValueChange={setNewPw}
+            placeholder="at least 8 characters"
+            meter
+            username={me.member.username ?? undefined}
+            className="h-11 rounded-xl text-sm"
           />
         </label>
         <label className="mt-3 block">
@@ -348,6 +447,14 @@ export default function SettingsPage() {
         className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 font-medium text-muted-foreground transition-colors hover:text-destructive"
       >
         <LogOut className="size-4" /> Log out
+      </button>
+      <button
+        type="button"
+        onClick={logoutEverywhere}
+        disabled={logoutAll.isPending}
+        className="-mt-2 flex w-full items-center justify-center gap-2 py-2 text-sm text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
+      >
+        <MonitorSmartphone className="size-4" /> Log out of all devices
       </button>
     </main>
   );

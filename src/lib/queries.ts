@@ -56,10 +56,36 @@ export function useLogin() {
   });
 }
 
+/** Step 1 of signup: mails the code (no session yet). */
 export function useRegister() {
+  return useMutation({ mutationFn: api.register });
+}
+
+/** Step 2 of signup: the code creates the account and logs in. */
+export function useVerifyRegistration() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: api.register,
+    mutationFn: api.registerVerify,
+    onSuccess: (data) => {
+      qc.setQueryData(qk.auth, { member: data.member });
+      invalidateData(qc);
+    },
+  });
+}
+
+export function useForgotPassword() {
+  return useMutation({ mutationFn: api.passwordForgot });
+}
+
+export function useVerifyResetCode() {
+  return useMutation({ mutationFn: api.passwordVerify });
+}
+
+/** Sets the new password; the backend signs out every other session and logs this one in. */
+export function useResetPassword() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.passwordReset,
     onSuccess: (data) => {
       qc.setQueryData(qk.auth, { member: data.member });
       invalidateData(qc);
@@ -71,6 +97,18 @@ export function useLogout() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: api.logout,
+    onSuccess: () => {
+      qc.setQueryData(qk.auth, { member: null });
+      qc.clear();
+    },
+  });
+}
+
+/** Revokes every session for this account, this device included. */
+export function useLogoutAll() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.logoutAll,
     onSuccess: () => {
       qc.setQueryData(qk.auth, { member: null });
       qc.clear();
@@ -227,6 +265,17 @@ export function useSetEmail() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (email: string | null) => api.setEmail(email),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.auth });
+      qc.invalidateQueries({ queryKey: qk.me });
+    },
+  });
+}
+
+export function useVerifyEmail() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.verifyEmail,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.auth });
       qc.invalidateQueries({ queryKey: qk.me });

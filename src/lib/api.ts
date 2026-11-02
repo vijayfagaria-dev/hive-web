@@ -75,6 +75,8 @@ export type Member = z.infer<typeof Member>;
 /** Your own member — adds private contact fields. */
 export const SelfMember = Member.extend({
   email: z.string().nullable(),
+  /** The email was proven with a one-time code (legacy addresses may be unverified). */
+  emailVerified: z.boolean().default(false),
   whatsapp: z.string().nullable(),
 });
 export type SelfMember = z.infer<typeof SelfMember>;
@@ -401,6 +403,7 @@ export type Invitation = z.infer<typeof Invitation>;
 export const InvitePreview = z.object({
   role: Role,
   name: z.string().nullable(),
+  email: z.string().nullable().optional(),
   invitedBy: z.string().nullable(),
   expiresAt: z.string(),
 });
@@ -409,6 +412,23 @@ export type InvitePreview = z.infer<typeof InvitePreview>;
 // ─── Endpoint response schemas ───
 const AuthMe = z.object({ member: SelfMember.nullable() });
 const AuthResult = z.object({ member: SelfMember });
+
+/** A one-time code is on its way. Countdowns are relative seconds (no clock skew). */
+export const Verification = z.object({
+  email: z.string(),
+  expiresIn: z.number(),
+  resendIn: z.number(),
+});
+export type Verification = z.infer<typeof Verification>;
+const VerificationResult = z.object({ verification: Verification });
+const ResetTokenResult = z.object({ resetToken: z.string(), expiresIn: z.number() });
+export const EmailState = z.object({
+  ok: z.boolean(),
+  email: z.string().nullable(),
+  emailVerified: z.boolean(),
+  pending: Verification.nullable(),
+});
+export type EmailState = z.infer<typeof EmailState>;
 const Ok = z.object({ ok: z.boolean() });
 
 export const MeResponse = z.object({
@@ -684,7 +704,6 @@ const VoteResult = z.object({
 const PayFineResult = z.object({ paid: z.boolean(), changed: z.boolean() });
 const BillCreated = z.object({ ok: z.boolean(), billId: z.number() });
 const PushKey = z.object({ key: z.string().nullable() });
-const EmailResult = z.object({ ok: z.boolean(), email: z.string().nullable() });
 const WhatsappResult = z.object({ ok: z.boolean(), whatsapp: z.string().nullable() });
 
 // governance wrappers
@@ -785,11 +804,26 @@ type ProposalUpdateBody = {
 export const api = {
   // auth
   authMe: () => request("/auth/me", AuthMe),
+  /** Starts a signup — mails a code; the account exists only after registerVerify. */
   register: (body: Credentials) =>
-    request("/auth/register", AuthResult, { method: "POST", body: JSON.stringify(body) }),
+    request("/auth/register", VerificationResult, { method: "POST", body: JSON.stringify(body) }),
+  registerResend: (email: string) =>
+    request("/auth/register/resend", VerificationResult, { method: "POST", body: JSON.stringify({ email }) }),
+  registerVerify: (body: { email: string; code: string }) =>
+    request("/auth/register/verify", AuthResult, { method: "POST", body: JSON.stringify(body) }),
   login: (body: Pick<Credentials, "username" | "password">) =>
     request("/auth/login", AuthResult, { method: "POST", body: JSON.stringify(body) }),
   logout: () => request("/auth/logout", Ok, { method: "POST" }),
+  logoutAll: () => request("/auth/logout-all", Ok, { method: "POST" }),
+  // forgot password: forgot -> verify (code -> resetToken) -> reset (logs in)
+  passwordForgot: (email: string) =>
+    request("/auth/password/forgot", VerificationResult, { method: "POST", body: JSON.stringify({ email }) }),
+  passwordResend: (email: string) =>
+    request("/auth/password/resend", VerificationResult, { method: "POST", body: JSON.stringify({ email }) }),
+  passwordVerify: (body: { email: string; code: string }) =>
+    request("/auth/password/verify", ResetTokenResult, { method: "POST", body: JSON.stringify(body) }),
+  passwordReset: (body: { resetToken: string; newPassword: string }) =>
+    request("/auth/password/reset", AuthResult, { method: "POST", body: JSON.stringify(body) }),
 
   // read surfaces
   me: () => request("/me", MeResponse),
@@ -896,8 +930,13 @@ export const api = {
     request("/notifications/read-all", z.object({ ok: z.boolean(), marked: z.number() }), { method: "POST" }),
 
   // account & web push
+  /** A new/unverified address comes back as `pending` (code mailed); empty clears it. */
   setEmail: (email: string | null) =>
-    request("/account/email", EmailResult, { method: "POST", body: JSON.stringify({ email }) }),
+    request("/account/email", EmailState, { method: "POST", body: JSON.stringify({ email }) }),
+  resendEmailCode: (email: string) =>
+    request("/account/email/resend", EmailState, { method: "POST", body: JSON.stringify({ email }) }),
+  verifyEmail: (body: { email: string; code: string }) =>
+    request("/account/email/verify", EmailState, { method: "POST", body: JSON.stringify(body) }),
   setWhatsapp: (whatsapp: string | null) =>
     request("/account/whatsapp", WhatsappResult, { method: "POST", body: JSON.stringify({ whatsapp }) }),
   changePassword: (body: { currentPassword: string; newPassword: string }) =>
