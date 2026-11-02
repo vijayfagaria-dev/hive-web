@@ -31,7 +31,6 @@ type Tab = "expenses" | "settle" | "rent" | "recurring";
 
 export default function ExpensesPage() {
   const me = useAuth().data?.member ?? null;
-  const isTenant = me?.role === "tenant";
   const bal = useMyBalance();
   const memberBalances = useMemberBalances();
   const members = (memberBalances.data?.balances ?? []).map((b) => ({ memberId: b.memberId, name: b.name }));
@@ -71,15 +70,13 @@ export default function ExpensesPage() {
         </section>
       )}
 
-      {isTenant && (
-        <button
-          type="button"
-          onClick={() => setWizard(true)}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary font-semibold text-primary-foreground glow-acid"
-        >
-          <Plus className="size-5" /> I paid for something
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => setWizard(true)}
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary font-semibold text-primary-foreground glow-acid"
+      >
+        <Plus className="size-5" /> I paid for something
+      </button>
 
       {/* tabs */}
       <div className="grid grid-cols-4 gap-2">
@@ -98,17 +95,17 @@ export default function ExpensesPage() {
         ))}
       </div>
 
-      {tab === "expenses" && <ExpensesTab isTenant={isTenant} />}
+      {tab === "expenses" && <ExpensesTab />}
       {tab === "settle" && <SettleTab meId={me?.id ?? null} />}
-      {tab === "rent" && <RentTab members={members} isTenant={isTenant} />}
-      {tab === "recurring" && <RecurringTab members={members} meId={me?.id ?? null} isTenant={isTenant} />}
+      {tab === "rent" && <RentTab members={members} />}
+      {tab === "recurring" && <RecurringTab members={members} meId={me?.id ?? null} />}
 
       <IPaidWizard open={wizard} onClose={() => setWizard(false)} members={members} meId={me?.id ?? null} />
     </main>
   );
 }
 
-function ExpensesTab({ isTenant }: { isTenant: boolean }) {
+function ExpensesTab() {
   const { data, isPending } = useExpenses();
   const del = useDeleteExpense();
   if (isPending || !data) return <Skeleton className="h-40 w-full rounded-2xl" />;
@@ -127,7 +124,7 @@ function ExpensesTab({ isTenant }: { isTenant: boolean }) {
               {e.status === "void" ? " · deleted" : ""}
             </p>
           </div>
-          {isTenant && e.status !== "void" && (
+          {e.status !== "void" && (
             <button
               type="button"
               onClick={() => del.mutate(e.id)}
@@ -268,7 +265,7 @@ function SettleRow({
   );
 }
 
-function RentTab({ members, isTenant }: { members: { memberId: number; name: string }[]; isTenant: boolean }) {
+function RentTab({ members }: { members: { memberId: number; name: string }[] }) {
   const month = thisMonth();
   const { data, isPending } = useRentStatus(month);
   const rec = useRecordRent();
@@ -308,7 +305,7 @@ function RentTab({ members, isTenant }: { members: { memberId: number; name: str
         </ul>
       </section>
 
-      {isTenant && !data.complete && (
+      {!data.complete && (
         <section className="rounded-2xl border border-border bg-card p-4">
           <p className="mb-2 text-sm font-medium">Record a rent payment</p>
           <div className="flex gap-2">

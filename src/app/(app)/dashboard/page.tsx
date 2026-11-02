@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { useAuth, useDashboard, usePublicStats } from "@/lib/queries";
+import { useDashboard, usePublicStats } from "@/lib/queries";
 import { GettingHereCard } from "@/components/app/getting-here-card";
 import { PotHero } from "@/components/app/pot-hero";
 import { DuesList } from "@/components/app/dues-list";
@@ -26,18 +25,9 @@ function Section({ title, action, children }: { title: string; action?: ReactNod
 }
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const member = useAuth().data?.member ?? null;
-
-  useEffect(() => {
-    if (member && member.role !== "tenant") router.replace("/hive");
-  }, [member, router]);
-
   const { data, isPending } = useDashboard();
   const gettingHere = usePublicStats().data?.gettingHere ?? null;
   const activeBills = data?.bills.filter((b) => b.status === "pending" || b.status === "disputed") ?? [];
-
-  if (member && member.role !== "tenant") return null;
 
   if (isPending || !data) {
     return (

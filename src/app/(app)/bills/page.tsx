@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Plus } from "lucide-react";
-import { useAuth, useDashboard } from "@/lib/queries";
+import { useDashboard } from "@/lib/queries";
 import { DuesList } from "@/components/app/dues-list";
 import { BillsList } from "@/components/app/bills-list";
 import { BillCreateForm } from "@/components/app/bill-create-form";
@@ -12,17 +11,8 @@ import { EmptyState } from "@/components/app/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function BillsPage() {
-  const router = useRouter();
-  const member = useAuth().data?.member ?? null;
-
-  useEffect(() => {
-    if (member && member.role !== "tenant") router.replace("/hive");
-  }, [member, router]);
-
   const { data, isPending } = useDashboard();
   const [open, setOpen] = useState(false);
-
-  if (member && member.role !== "tenant") return null;
 
   if (isPending || !data) {
     return (

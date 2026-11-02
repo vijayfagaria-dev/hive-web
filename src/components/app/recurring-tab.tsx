@@ -22,7 +22,7 @@ const CAT_EMOJI: Record<string, string> = {
 
 type Member = { memberId: number; name: string };
 
-export function RecurringTab({ members, meId, isTenant }: { members: Member[]; meId: number | null; isTenant: boolean }) {
+export function RecurringTab({ members, meId }: { members: Member[]; meId: number | null }) {
   const templates = useTemplates();
   const recurring = useRecurring();
   const createTpl = useCreateTemplate();
@@ -74,11 +74,9 @@ export function RecurringTab({ members, meId, isTenant }: { members: Member[]; m
       <section>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Templates</h2>
-          {isTenant && (
-            <button type="button" onClick={() => setShowNew((v) => !v)} className="font-mono text-xs uppercase tracking-wider text-acid">
-              {showNew ? "Cancel" : "+ New"}
-            </button>
-          )}
+          <button type="button" onClick={() => setShowNew((v) => !v)} className="font-mono text-xs uppercase tracking-wider text-acid">
+            {showNew ? "Cancel" : "+ New"}
+          </button>
         </div>
 
         {showNew && (
@@ -107,18 +105,16 @@ export function RecurringTab({ members, meId, isTenant }: { members: Member[]; m
                     {CAT_EMOJI[t.category] ?? "🧾"} <b>{t.name}</b> · ₹{inr(t.amount)}
                     {isRecurring && <span className="ml-1 text-xs text-acid">· monthly</span>}
                   </span>
-                  {isTenant && (
-                    <span className="flex shrink-0 gap-2">
-                      {!isRecurring && (
-                        <button type="button" onClick={() => createRec.mutate({ templateId: t.id, dayOfMonth: 1 })} className="rounded-full border border-border px-3 py-1.5 text-xs font-medium">
-                          Make monthly
-                        </button>
-                      )}
-                      <button type="button" onClick={() => generate(t.id)} className="flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
-                        <RefreshCw className="size-3" /> Add now
+                  <span className="flex shrink-0 gap-2">
+                    {!isRecurring && (
+                      <button type="button" onClick={() => createRec.mutate({ templateId: t.id, dayOfMonth: 1 })} className="rounded-full border border-border px-3 py-1.5 text-xs font-medium">
+                        Make monthly
                       </button>
-                    </span>
-                  )}
+                    )}
+                    <button type="button" onClick={() => generate(t.id)} className="flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+                      <RefreshCw className="size-3" /> Add now
+                    </button>
+                  </span>
                 </li>
               );
             })}

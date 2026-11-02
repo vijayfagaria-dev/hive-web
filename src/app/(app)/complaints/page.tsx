@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { PHASE_OF } from "@/lib/api";
 import { useAuth, useDashboard } from "@/lib/queries";
 import { RecentFeed } from "@/components/app/recent-feed";
@@ -19,26 +18,8 @@ type FilterKey = (typeof FILTERS)[number][0];
 
 export default function FeedPage() {
   const member = useAuth().data?.member ?? null;
-  const isTenant = member?.role === "tenant";
   const { data, isPending, isError } = useDashboard(); // the only complaint list the API exposes
   const [filter, setFilter] = useState<FilterKey>("all");
-
-  // Guests can't read /dashboard — but they still get notified about anything involving them.
-  if (member && !isTenant) {
-    return (
-      <EmptyState
-        emoji="⚖️"
-        title="The feed is a tenant thing"
-        note="Guests don't see the whole flat's feed — but you'll be pinged about anything involving you."
-        action={
-          <Link href="/notifications" className="rounded-full border border-border px-4 py-2 text-sm">
-            Notifications →
-          </Link>
-        }
-        className="min-h-[60svh]"
-      />
-    );
-  }
 
   if (isPending) {
     return (

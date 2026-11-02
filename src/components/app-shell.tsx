@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, ReactNode } from "react";
-import { Bell, Coins, Home, Landmark, Plus, Scale, User } from "lucide-react";
+import { Bell, BookOpen, Coins, Home, Landmark, Plus, Receipt, Scale, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SelfMember } from "@/lib/api";
 import { useNotifications, usePublicStats } from "@/lib/queries";
@@ -58,9 +58,17 @@ export function AppShell({ member, children }: { member: SelfMember; children: R
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
         <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center px-2">
           <Tab href={homeHref} label="Home" icon={Home} active={on(homeHref, "/hive", "/dashboard")} />
-          <Tab href="/complaints" label="Feed" icon={Scale} active={on("/complaints") && !on("/complaints/new")} />
+          {isTenant ? (
+            <Tab href="/complaints" label="Feed" icon={Scale} active={on("/complaints") && !on("/complaints/new")} />
+          ) : (
+            <Tab href="/rules" label="Rules" icon={BookOpen} active={on("/rules")} />
+          )}
           <Fab href="/complaints/new" active={on("/complaints/new")} />
-          <Tab href="/expenses" label="Money" icon={Coins} active={on("/expenses", "/money", "/pay")} />
+          {isTenant ? (
+            <Tab href="/expenses" label="Money" icon={Coins} active={on("/expenses", "/money", "/pay")} />
+          ) : (
+            <Tab href="/pay" label="Fines" icon={Receipt} active={on("/pay", "/money")} />
+          )}
           <Tab href="/settings" label="You" icon={User} active={on("/settings")} />
         </div>
       </nav>

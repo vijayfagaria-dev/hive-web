@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { api, ApiError } from "@/lib/api";
@@ -188,7 +188,7 @@ function AdminPanel() {
 
 function RentSharesCard() {
   const balances = useBalances();
-  const tenants = (balances.data?.balances ?? []).filter((b) => b.role === "tenant");
+  const tenants = useMemo(() => balances.data?.balances ?? [], [balances.data]);
   const save = useSetRentShares();
   const [shares, setShares] = useState<Record<number, string>>({});
   const [msg, setMsg] = useState<string | null>(null);
@@ -349,7 +349,7 @@ function SettlementCard() {
 
 function AddMoneyCard() {
   const balances = useBalances();
-  const tenants = (balances.data?.balances ?? []).filter((b) => b.role === "tenant");
+  const tenants = balances.data?.balances ?? [];
   const charge = useAddCharge();
   const credit = useAddCredit();
   const [mode, setMode] = useState<"charge" | "credit">("charge");
