@@ -1,461 +1,145 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, Bell, CircleAlert, Download, KeyRound, LogOut, Mail, MessageCircle, MonitorSmartphone, Share, Users } from "lucide-react";
-import { api, ApiError, type Verification } from "@/lib/api";
-import { passwordAcceptable } from "@/lib/password";
-import {
-  useChangePassword,
-  useLogout,
-  useLogoutAll,
-  useMe,
-  usePushPublicKey,
-  useSetEmail,
-  useSetWhatsapp,
-  useVerifyEmail,
-} from "@/lib/queries";
-import { usePwaInstall } from "@/lib/use-pwa";
-import { Sheet } from "@/components/app/sheet";
-import { OtpStep } from "@/components/auth/otp-step";
-import { PasswordField } from "@/components/auth/password-field";
+import { BadgeCheck, CircleAlert, KeyRound, LogOut, Mail, MessageCircle, MonitorSmartphone, Users } from "lucide-react";
+import { useLogout, useLogoutAll, useMe, usePushPublicKey } from "@/lib/queries";
+import { Avatar } from "@/components/app/avatar";
+import { RoleBadge } from "@/components/household/role-badge";
+import { EmailSheet } from "@/components/settings/email-sheet";
+import { InstallRow } from "@/components/settings/install-row";
+import { PasswordSheet } from "@/components/settings/password-sheet";
+import { formatPhone } from "@/components/settings/phone-field";
+import { PushRow } from "@/components/settings/push-row";
+import { SettingsGroup, SettingsRow } from "@/components/settings/settings-list";
+import { WhatsappSheet } from "@/components/settings/whatsapp-sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 
-function Card({ children }: { children: React.ReactNode }) {
-  return <section className="glass rounded-2xl p-5">{children}</section>;
-}
-
-const fieldCls =
-  "h-11 w-full rounded-xl border border-input bg-card px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30";
-
-function urlB64ToUint8(base64: string) {
-  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
-  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(b64);
-  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
-}
+type Panel = "email" | "whatsapp" | "password" | null;
 
 export default function SettingsPage() {
   const router = useRouter();
   const { data: me, isPending } = useMe();
-  const setEmail = useSetEmail();
-  const setWhatsapp = useSetWhatsapp();
-  const changePassword = useChangePassword();
-  const verifyEmail = useVerifyEmail();
   const logout = useLogout();
   const logoutAll = useLogoutAll();
-  const pushKey = usePushPublicKey();
-  const pwa = usePwaInstall();
-
-  const [email, setEmailV] = useState("");
-  const [whatsapp, setWhatsappV] = useState("");
-  const [contactMsg, setContactMsg] = useState<string | null>(null);
-  // A new/unverified email waiting on its code (the old address stays until verified).
-  const [emailPending, setEmailPending] = useState<Verification | null>(null);
-  const [pushOn, setPushOn] = useState(false);
-  const [pushBusy, setPushBusy] = useState(false);
-  const [pushMsg, setPushMsg] = useState<string | null>(null);
-  const [showInstall, setShowInstall] = useState(false);
-  const [curPw, setCurPw] = useState("");
-  const [newPw, setNewPw] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
-  const [pwMsg, setPwMsg] = useState<string | null>(null);
+  const vapidKey = usePushPublicKey().data?.key ?? null;
+  const [panel, setPanel] = useState<Panel>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
-    if (me) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- seed the form from async-loaded contact details
-      setEmailV(me.member.email ?? "");
-      setWhatsappV(me.member.whatsapp ?? "");
-    }
-  }, [me]);
-
-  useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.ready
-      .then((reg) => reg.pushManager.getSubscription())
-      .then((sub) => setPushOn(!!sub))
-      .catch(() => {});
-  }, []);
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), 3000);
+    return () => clearTimeout(t);
+  }, [notice]);
 
   if (isPending || !me) {
     return (
-      <main className="mx-auto max-w-xl space-y-4 px-5 py-8">
-        <Skeleton className="h-9 w-32" />
-        <Skeleton className="h-40 w-full rounded-2xl" />
+      <main className="mx-auto max-w-xl space-y-5 px-5 py-8">
+        <Skeleton className="h-20 w-full rounded-2xl" />
+        <Skeleton className="h-44 w-full rounded-2xl" />
         <Skeleton className="h-28 w-full rounded-2xl" />
       </main>
     );
   }
 
-  const currentEmail = me.member.email ?? "";
-  const emailVerified = me.member.emailVerified;
-
-  function saveContacts() {
-    setContactMsg(null);
-    const e = email.trim();
-    const w = whatsapp.trim();
-    // Only send the email if it changed — a new address triggers a verification code.
-    const emailChanged = e.toLowerCase() !== currentEmail.toLowerCase();
-    Promise.all([
-      emailChanged ? setEmail.mutateAsync(e || null) : Promise.resolve(null),
-      setWhatsapp.mutateAsync(w || null),
-    ])
-      .then(([emailRes]) => {
-        if (emailRes?.pending) {
-          setEmailPending(emailRes.pending);
-          setContactMsg("Saved — confirm your new email with the code we sent.");
-        } else {
-          setContactMsg("Saved ✅");
-        }
-      })
-      .catch((err) => setContactMsg(err instanceof ApiError ? err.message : "Couldn't save."));
-  }
-
-  function startVerifyCurrent() {
-    setContactMsg(null);
-    setEmail
-      .mutateAsync(currentEmail)
-      .then((res) => setEmailPending(res.pending))
-      .catch((err) => setContactMsg(err instanceof ApiError ? err.message : "Couldn't send a code."));
-  }
-
-  function cancelEmailChange() {
-    setEmailPending(null);
-    setEmailV(currentEmail);
-    setContactMsg(null);
-  }
+  const m = me.member;
+  const email = m.email ?? "";
 
   function logoutEverywhere() {
     if (!window.confirm("Sign out of Hive on every device, including this one?")) return;
     logoutAll.mutate(undefined, { onSuccess: () => router.replace("/login") });
   }
 
-  async function changePw() {
-    setPwMsg(null);
-    if (!passwordAcceptable(newPw, me?.member.username ?? undefined)) {
-      setPwMsg("Pick a stronger new password — see the checklist.");
-      return;
-    }
-    if (newPw !== confirmPw) {
-      setPwMsg("New passwords don't match.");
-      return;
-    }
-    try {
-      await changePassword.mutateAsync({ currentPassword: curPw, newPassword: newPw });
-      setCurPw("");
-      setNewPw("");
-      setConfirmPw("");
-      setPwMsg("Password updated ✅ — other devices were signed out.");
-    } catch (err) {
-      setPwMsg(err instanceof ApiError ? err.message : "Couldn't change password.");
-    }
-  }
-
-  async function togglePush(next: boolean) {
-    setPushMsg(null);
-    setPushBusy(true);
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      if (next) {
-        const perm = await Notification.requestPermission();
-        if (perm !== "granted") throw new Error("Notifications are blocked in your browser.");
-        const key = pushKey.data?.key;
-        if (!key) throw new Error("Push isn't configured.");
-        const sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlB64ToUint8(key),
-        });
-        const j = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
-        await api.pushSubscribe({
-          endpoint: j.endpoint ?? "",
-          keys: { p256dh: j.keys?.p256dh ?? "", auth: j.keys?.auth ?? "" },
-        });
-        setPushOn(true);
-      } else {
-        const sub = await reg.pushManager.getSubscription();
-        if (sub) {
-          await api.pushUnsubscribe(sub.endpoint).catch(() => {});
-          await sub.unsubscribe();
-        }
-        setPushOn(false);
-      }
-    } catch (err) {
-      setPushMsg(err instanceof Error ? err.message : "Couldn't update push.");
-    } finally {
-      setPushBusy(false);
-    }
-  }
-
-  const pushConfigured = pushKey.data?.key != null;
-  const contactSaving = setEmail.isPending || setWhatsapp.isPending;
-
   return (
-    <main className="mx-auto max-w-xl space-y-5 px-5 py-8">
-      <header>
-        <h1 className="font-heading text-3xl font-bold tracking-tight">⚙️ You</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Signed in as {me.member.name}.</p>
+    <main className="mx-auto max-w-xl space-y-6 px-5 py-8">
+      <header className="flex items-center gap-4">
+        <Avatar name={m.name} className="size-16 text-xl" />
+        <div className="min-w-0">
+          <h1 className="truncate font-heading text-2xl font-bold tracking-tight">{m.name}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            {m.username && <span>@{m.username}</span>}
+            <RoleBadge role={m.role} />
+          </div>
+        </div>
       </header>
 
-      <Link
-        href="/household"
-        className="glass group flex items-center gap-4 rounded-2xl p-5 transition-transform hover:-translate-y-0.5"
-      >
-        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/15 text-acid">
-          <Users className="size-5" />
-        </span>
-        <span className="flex-1">
-          <span className="block font-semibold">Household</span>
-          <span className="block text-sm text-muted-foreground">
-            {me.member.role === "tenant" ? "Manage members, roles & invites." : "See who's in the flat."}
-          </span>
-        </span>
-        <span aria-hidden className="text-xl text-muted-foreground transition-transform group-hover:translate-x-1">→</span>
-      </Link>
+      <p aria-live="polite" className={notice ? "rounded-xl bg-primary/15 px-4 py-2.5 text-sm font-medium" : "sr-only"}>
+        {notice ? `✓ ${notice}` : ""}
+      </p>
 
-      <Card>
-        <h2 className="text-base font-semibold">Get notified</h2>
-        <p className="mt-1 text-sm text-muted-foreground">So Hive can ping you the moment you&apos;re accused.</p>
-        <label className="mt-4 block">
-          <span className="mb-1.5 flex items-center justify-between gap-2">
-            <span className="flex items-center gap-1.5 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
-              <Mail className="size-3.5" /> Email
-            </span>
-            {emailPending ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-chart-4/15 px-2 py-0.5 text-[0.7rem] font-medium text-foreground">
-                <Mail className="size-3.5" /> Awaiting code
+      <SettingsGroup title="Account">
+        <SettingsRow
+          icon={Mail}
+          label="Email"
+          onClick={() => setPanel("email")}
+          value={
+            email ? (
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span className="truncate">{email}</span>
+                {m.emailVerified ? (
+                  <BadgeCheck aria-label="Verified" className="size-4 shrink-0 text-acid" />
+                ) : (
+                  <CircleAlert aria-label="Not verified" className="size-4 shrink-0 text-chart-4" />
+                )}
               </span>
-            ) : currentEmail &&
-              (emailVerified ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[0.7rem] font-medium text-accent-foreground">
-                  <BadgeCheck className="size-3.5" /> Verified
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-chart-4/15 px-2 py-0.5 text-[0.7rem] font-medium text-foreground">
-                  <CircleAlert className="size-3.5" /> Unverified
-                </span>
-              ))}
-          </span>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmailV(e.target.value)}
-            placeholder="you@flat.com"
-            disabled={!!emailPending}
-            className={cn(fieldCls, "disabled:opacity-60")}
-          />
-        </label>
-        {currentEmail && !emailVerified && !emailPending && email.trim().toLowerCase() === currentEmail.toLowerCase() && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Verify this address so password resets reach you.{" "}
-            <button
-              type="button"
-              onClick={startVerifyCurrent}
-              disabled={setEmail.isPending}
-              className="font-medium text-foreground underline underline-offset-4 disabled:opacity-50"
-            >
-              Send code
-            </button>
-          </p>
-        )}
-        {emailPending && (
-          <div className="mt-4 rounded-xl border border-border bg-background/60 p-4">
-            <OtpStep
-              compact
-              verification={emailPending}
-              submitLabel="Confirm email"
-              onVerify={(code) =>
-                verifyEmail.mutateAsync({ email: emailPending.email, code }).then(() => {
-                  setEmailPending(null);
-                  setContactMsg("Email verified ✅");
-                })
-              }
-              onResend={() =>
-                api.resendEmailCode(emailPending.email).then((r) => r.pending ?? emailPending)
-              }
-              onBack={cancelEmailChange}
-              backLabel="Cancel"
-            />
-          </div>
-        )}
-        <label className="mt-3 block">
-          <span className="mb-1.5 flex items-center gap-1.5 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
-            <MessageCircle className="size-3.5" /> WhatsApp
-          </span>
-          <input type="tel" value={whatsapp} onChange={(e) => setWhatsappV(e.target.value)} placeholder="+91…" className={fieldCls} />
-        </label>
-        <div className="mt-4 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={saveContacts}
-            disabled={contactSaving}
-            className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-          >
-            {contactSaving ? "Saving…" : "Save"}
-          </button>
-          {contactMsg && <span className="text-sm text-muted-foreground">{contactMsg}</span>}
-        </div>
-      </Card>
+            ) : (
+              "Add email"
+            )
+          }
+        />
+        <SettingsRow
+          icon={MessageCircle}
+          label="WhatsApp"
+          value={formatPhone(m.whatsapp) || "Add number"}
+          onClick={() => setPanel("whatsapp")}
+        />
+        <SettingsRow icon={KeyRound} label="Password" value="Change" onClick={() => setPanel("password")} />
+      </SettingsGroup>
 
-      <Card>
-        <h2 className="flex items-center gap-2 text-base font-semibold">
-          <KeyRound className="size-4" /> Change password
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Update the password you log in with. Other devices get signed out.
+      {email && !m.emailVerified && (
+        <p className="-mt-3 px-1 text-xs text-muted-foreground">
+          Verify your email so password resets reach you — tap <b className="text-foreground">Email</b>.
         </p>
-        <label className="mt-4 block">
-          <span className="mb-1.5 block font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">Current password</span>
-          <input
-            type="password"
-            autoComplete="current-password"
-            value={curPw}
-            onChange={(e) => setCurPw(e.target.value)}
-            className={fieldCls}
-          />
-        </label>
-        <label className="mt-3 block">
-          <span className="mb-1.5 block font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">New password</span>
-          <PasswordField
-            autoComplete="new-password"
-            value={newPw}
-            onValueChange={setNewPw}
-            placeholder="at least 8 characters"
-            meter
-            username={me.member.username ?? undefined}
-            className="h-11 rounded-xl text-sm"
-          />
-        </label>
-        <label className="mt-3 block">
-          <span className="mb-1.5 block font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">Confirm new password</span>
-          <input
-            type="password"
-            autoComplete="new-password"
-            value={confirmPw}
-            onChange={(e) => setConfirmPw(e.target.value)}
-            className={fieldCls}
-          />
-        </label>
-        <div className="mt-4 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={changePw}
-            disabled={changePassword.isPending || !curPw || !newPw || !confirmPw}
-            className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-          >
-            {changePassword.isPending ? "Updating…" : "Update password"}
-          </button>
-          {pwMsg && <span className="text-sm text-muted-foreground">{pwMsg}</span>}
-        </div>
-      </Card>
-
-      {pushConfigured && (
-        <Card>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h2 className="flex items-center gap-2 text-base font-semibold">
-                <Bell className="size-4" /> Push notifications
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">Real-time alerts on this device.</p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={pushOn}
-              disabled={pushBusy}
-              onClick={() => togglePush(!pushOn)}
-              className={cn(
-                "relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50",
-                pushOn ? "bg-primary" : "bg-muted",
-              )}
-            >
-              <span className={cn("absolute top-1 size-5 rounded-full bg-card shadow transition-all", pushOn ? "left-6" : "left-1")} />
-            </button>
-          </div>
-          {pushMsg && <p className="mt-3 text-sm text-destructive">{pushMsg}</p>}
-        </Card>
       )}
 
-      {!pwa.isStandalone && (
-        <Card>
-          <h2 className="flex items-center gap-2 text-base font-semibold">
-            <Download className="size-4" /> Install Hive
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Add it to your home screen for a full-screen app{pwa.isIOS ? " — and to get notifications on iPhone" : ""}.
-          </p>
-          {pwa.isIOS ? (
-            // iOS Safari has no install prompt — guide the user through Add to Home Screen.
-            <button
-              type="button"
-              onClick={() => setShowInstall(true)}
-              className="mt-4 rounded-full bg-foreground px-5 py-2 text-sm font-semibold text-background"
-            >
-              Show me how
-            </button>
-          ) : pwa.canInstall ? (
-            <button
-              type="button"
-              onClick={pwa.promptInstall}
-              className="mt-4 rounded-full bg-foreground px-5 py-2 text-sm font-semibold text-background"
-            >
-              Add to home screen
-            </button>
-          ) : (
-            <p className="mt-3 text-sm text-muted-foreground">
-              Open your browser menu (⋮) and tap <b className="text-foreground">Install app</b> /{" "}
-              <b className="text-foreground">Add to Home screen</b>.
-            </p>
-          )}
-        </Card>
+      <SettingsGroup title="Notifications">
+        {vapidKey && <PushRow vapidKey={vapidKey} />}
+        <InstallRow />
+      </SettingsGroup>
+
+      <SettingsGroup title="Flat">
+        <SettingsRow
+          icon={Users}
+          label="Household"
+          value={m.role === "tenant" ? "Members & invites" : "Who's in the flat"}
+          href="/household"
+        />
+      </SettingsGroup>
+
+      <SettingsGroup title="Sign out">
+        <SettingsRow
+          icon={LogOut}
+          label="Log out"
+          destructive
+          disabled={logout.isPending}
+          onClick={() => logout.mutate(undefined, { onSuccess: () => router.replace("/login") })}
+        />
+        <SettingsRow
+          icon={MonitorSmartphone}
+          label="Log out of all devices"
+          destructive
+          disabled={logoutAll.isPending}
+          onClick={logoutEverywhere}
+        />
+      </SettingsGroup>
+
+      {panel === "email" && (
+        <EmailSheet open current={email} verified={m.emailVerified} onClose={() => setPanel(null)} onDone={setNotice} />
       )}
-
-      <Sheet open={showInstall} onClose={() => setShowInstall(false)} title="Add Hive to your Home Screen">
-        <ol className="space-y-4">
-          {[
-            <>
-              Tap the <b>Share</b> button <Share className="-mt-0.5 inline size-4" /> in Safari&apos;s toolbar.
-            </>,
-            <>
-              Scroll down and tap <b>Add to Home Screen</b>.
-            </>,
-            <>
-              Tap <b>Add</b> — Hive lands on your home screen like a real app. 🐝
-            </>,
-          ].map((step, i) => (
-            <li key={i} className="flex items-start gap-3">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary/15 text-sm font-bold text-acid">
-                {i + 1}
-              </span>
-              <span className="text-sm leading-relaxed">{step}</span>
-            </li>
-          ))}
-        </ol>
-        <button
-          type="button"
-          onClick={() => setShowInstall(false)}
-          className="mt-6 w-full rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground"
-        >
-          Got it
-        </button>
-      </Sheet>
-
-      <button
-        type="button"
-        onClick={() => logout.mutate(undefined, { onSuccess: () => router.replace("/login") })}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 font-medium text-muted-foreground transition-colors hover:text-destructive"
-      >
-        <LogOut className="size-4" /> Log out
-      </button>
-      <button
-        type="button"
-        onClick={logoutEverywhere}
-        disabled={logoutAll.isPending}
-        className="-mt-2 flex w-full items-center justify-center gap-2 py-2 text-sm text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
-      >
-        <MonitorSmartphone className="size-4" /> Log out of all devices
-      </button>
+      {panel === "whatsapp" && <WhatsappSheet open current={m.whatsapp} onClose={() => setPanel(null)} onDone={setNotice} />}
+      {panel === "password" && (
+        <PasswordSheet open username={m.username ?? undefined} onClose={() => setPanel(null)} onDone={setNotice} />
+      )}
     </main>
   );
 }
