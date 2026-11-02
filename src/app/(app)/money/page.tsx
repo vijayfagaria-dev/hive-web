@@ -277,7 +277,7 @@ function SettlementCard() {
       }
     >
       <p className="text-sm text-muted-foreground">
-        The fine pot goes toward rent; leftover is split back by rent share. Unpaid fines trigger a penalty.
+        The fine pot goes toward rent; leftover is split back by rent share.
       </p>
       {open && (
         <div className="mt-4">
@@ -309,20 +309,6 @@ function SettlementCard() {
                   </ul>
                 </div>
               )}
-              {p.penalties.map((pen) => (
-                <div key={pen.defaulterId} className="mt-3 rounded-xl bg-destructive/5 p-3 text-sm">
-                  <p className="font-medium text-destructive">
-                    ⚖️ {pen.defaulterName} — penalty ₹{inr(pen.amount)} (unpaid ₹{inr(pen.unpaid)})
-                  </p>
-                  <ul className="mt-1 space-y-1 text-muted-foreground">
-                    {pen.credits.map((c) => (
-                      <li key={c.memberId} className="flex justify-between">
-                        <span>{c.name}</span> <b className="tabular-nums text-acid">+₹{inr(c.amount)}</b>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
               {msg && <p className="mt-3 text-sm text-muted-foreground">{msg}</p>}
               <button
                 type="button"

@@ -535,15 +535,6 @@ export const SettlementPreview = z.object({
   appliedToRent: z.number(),
   leftover: z.number(),
   payouts: z.array(PayoutLine),
-  penalties: z.array(
-    z.object({
-      defaulterId: z.number(),
-      defaulterName: z.string(),
-      unpaid: z.number(),
-      amount: z.number(),
-      credits: z.array(PayoutLine),
-    }),
-  ),
   settlementId: z.number().optional(), // present on close
 });
 export type SettlementPreview = z.infer<typeof SettlementPreview>;
